@@ -1954,7 +1954,7 @@ function closeConfirm() {
 
 function confirmClear() {
   canvas.querySelectorAll('.box').forEach(el => el.remove());
-  svgArrows.querySelectorAll('line').forEach(l => l.remove());
+  svgArrows.innerHTML = '';
   boxes = [];
   arrows = [];
   selectedBoxId = null;
@@ -1983,7 +1983,7 @@ function importJSON() {
     reader.onload = (ev) => {
       try {
         canvas.querySelectorAll('.box').forEach(el => el.remove());
-        svgArrows.querySelectorAll('line').forEach(l => l.remove());
+        svgArrows.innerHTML = '';
         const data = JSON.parse(ev.target.result);
         boxes = data.boxes || [];
         arrows = data.arrows || [];
