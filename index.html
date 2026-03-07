@@ -1683,43 +1683,13 @@ function oppositeSide(side) {
 }
 
 function buildArrowPath(start, end, fromDir, toDir) {
-  const dx = Math.abs(end.x - start.x);
-  const dy = Math.abs(end.y - start.y);
-
-  // Straight line if nearly aligned
-  if (dx < 5 && dy < 5) return `M${start.x},${start.y} L${end.x},${end.y}`;
-
-  // Is the target "ahead" in the exit direction?
-  const ahead =
-    (fromDir === 'top' && end.y <= start.y) ||
-    (fromDir === 'bottom' && end.y >= start.y) ||
-    (fromDir === 'left' && end.x <= start.x) ||
-    (fromDir === 'right' && end.x >= start.x);
-
   const isHoriz = (fromDir === 'left' || fromDir === 'right');
-
-  // Straight line if aligned with exit axis
-  if (isHoriz && dy < 5) return `M${start.x},${start.y} L${end.x},${end.y}`;
-  if (!isHoriz && dx < 5) return `M${start.x},${start.y} L${end.x},${end.y}`;
-
-  if (ahead) {
-    // First leg follows exit direction
-    if (isHoriz) {
-      // Horizontal first → corner at (end.x, start.y)
-      return `M${start.x},${start.y} L${end.x},${start.y} L${end.x},${end.y}`;
-    } else {
-      // Vertical first → corner at (start.x, end.y)
-      return `M${start.x},${start.y} L${start.x},${end.y} L${end.x},${end.y}`;
-    }
+  if (isHoriz) {
+    const midX = (start.x + end.x) / 2;
+    return `M${start.x},${start.y} L${midX},${start.y} L${midX},${end.y} L${end.x},${end.y}`;
   } else {
-    // Target is behind exit — go perpendicular first
-    if (isHoriz) {
-      // Vertical first → corner at (start.x, end.y)
-      return `M${start.x},${start.y} L${start.x},${end.y} L${end.x},${end.y}`;
-    } else {
-      // Horizontal first → corner at (end.x, start.y)
-      return `M${start.x},${start.y} L${end.x},${start.y} L${end.x},${end.y}`;
-    }
+    const midY = (start.y + end.y) / 2;
+    return `M${start.x},${start.y} L${start.x},${midY} L${end.x},${midY} L${end.x},${end.y}`;
   }
 }
 
