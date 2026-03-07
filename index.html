@@ -117,6 +117,34 @@
 
   .gear-btn:hover { transform: rotate(30deg); }
 
+  .icon-btn.active {
+    color: var(--accent) !important;
+    background: var(--accent-glow) !important;
+    border-radius: 6px;
+  }
+
+  .free-text {
+    position: absolute;
+    min-width: 20px;
+    min-height: 1em;
+    color: var(--box-text);
+    font-family: var(--font);
+    font-size: 15px;
+    cursor: move;
+    z-index: 2;
+    outline: none;
+    white-space: pre-wrap;
+    line-height: 1.4;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+
+  .free-text:focus {
+    cursor: text;
+    background: var(--box-edit-bg);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+  }
+
   .icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
 
   /* Viewport */
@@ -615,6 +643,10 @@
   <button onclick="exportJSON()">Save</button>
   <button onclick="importJSON()">Load</button>
   <span class="sep">|</span>
+  <button id="text-mode-btn" class="icon-btn" onclick="toggleTextMode()" title="Text mode (T)">
+    <svg viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>
+  </button>
+  <span class="sep">|</span>
   <button class="icon-btn" onclick="resetView()" title="Reset view">
     <svg viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
   </button>
@@ -801,6 +833,10 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (e.target.contentEditable === 'true') return;
+  if (e.key === 't' || e.key === 'T') {
+    toggleTextMode();
+    return;
+  }
   if ((e.key === 'Delete' || e.key === 'Backspace') && selectedArrowIdx !== null) {
     e.preventDefault();
     arrows.splice(selectedArrowIdx, 1);
@@ -1345,6 +1381,9 @@ const undoStack = [];
 const redoStack = [];
 const MAX_HISTORY = 50;
 
+let textMode = false;
+let freeTexts = [];
+
 let isDrawing = false;
 let drawStart = null; // in canvas coords
 let drawPreview = null;
@@ -1819,10 +1858,19 @@ viewport.addEventListener('mousedown', (e) => {
     return;
   }
 
-  // Left click on empty canvas = draw box
+  // Left click on empty canvas
   if (e.button === 0 && e.target === viewport) {
     selectBox(null);
     deselectArrow();
+
+    // Text mode: place a free text
+    if (textMode) {
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      addFreeText(cp.x, cp.y);
+      save();
+      return;
+    }
+
     isDrawing = true;
     drawStart = screenToCanvas(e.clientX, e.clientY);
     drawPreview = document.createElement('div');
@@ -1951,7 +1999,7 @@ document.addEventListener('touchend', (e) => {
 
 // --- Persistence ---
 function getSnapshot() {
-  return JSON.stringify({ boxes, arrows, nextId });
+  return JSON.stringify({ boxes, arrows, nextId, freeTexts });
 }
 
 function pushUndo() {
@@ -1969,13 +2017,16 @@ function updateUndoRedoButtons() {
 function restoreSnapshot(snapshot) {
   const data = JSON.parse(snapshot);
   canvas.querySelectorAll('.box').forEach(el => el.remove());
+  canvas.querySelectorAll('.free-text').forEach(el => el.remove());
   svgArrows.innerHTML = '';
   boxes = data.boxes || [];
   arrows = data.arrows || [];
   nextId = data.nextId || 1;
+  freeTexts = [];
   selectedBoxId = null;
   selectedArrowIdx = null;
   boxes.forEach(b => createBoxElement(b));
+  (data.freeTexts || []).forEach(ft => addFreeText(ft.x, ft.y, ft.text, ft.id));
   renderArrows();
   localStorage.setItem('whiteboard-data', snapshot);
 }
@@ -2007,9 +2058,87 @@ function load() {
     boxes = data.boxes || [];
     arrows = data.arrows || [];
     nextId = data.nextId || 1;
+    freeTexts = [];
     boxes.forEach(b => createBoxElement(b));
+    (data.freeTexts || []).forEach(ft => addFreeText(ft.x, ft.y, ft.text, ft.id));
     renderArrows();
   } catch(e) { console.error('Failed to load:', e); }
+}
+
+// --- Text Mode ---
+function toggleTextMode() {
+  textMode = !textMode;
+  document.getElementById('text-mode-btn').classList.toggle('active', textMode);
+  viewport.style.cursor = textMode ? 'text' : '';
+}
+
+function addFreeText(x, y, text, id) {
+  if (!id) id = 'ft-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+  const ft = { id, x, y, text: text || '' };
+  if (!freeTexts.find(t => t.id === id)) freeTexts.push(ft);
+
+  const el = document.createElement('div');
+  el.className = 'free-text';
+  el.contentEditable = 'true';
+  el.dataset.ftId = id;
+  el.style.left = ft.x + 'px';
+  el.style.top = ft.y + 'px';
+  el.innerText = ft.text;
+  canvas.appendChild(el);
+
+  // Auto-focus new text
+  if (!text) {
+    setTimeout(() => el.focus(), 0);
+  }
+
+  // Save on blur
+  el.addEventListener('blur', () => {
+    const t = freeTexts.find(t => t.id === id);
+    if (t) {
+      t.text = el.innerText;
+      if (!t.text.trim()) {
+        // Remove empty texts
+        freeTexts = freeTexts.filter(t => t.id !== id);
+        el.remove();
+      }
+      save();
+    }
+  });
+
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { el.blur(); }
+    e.stopPropagation();
+  });
+
+  // Drag support
+  let ftDragging = false, ftOffset = { x: 0, y: 0 };
+  el.addEventListener('mousedown', (e) => {
+    if (document.activeElement === el) return; // editing, don't drag
+    e.stopPropagation();
+    ftDragging = true;
+    const cp = screenToCanvas(e.clientX, e.clientY);
+    ftOffset.x = cp.x - ft.x;
+    ftOffset.y = cp.y - ft.y;
+
+    const onMove = (e2) => {
+      if (!ftDragging) return;
+      const cp2 = screenToCanvas(e2.clientX, e2.clientY);
+      ft.x = cp2.x - ftOffset.x;
+      ft.y = cp2.y - ftOffset.y;
+      el.style.left = ft.x + 'px';
+      el.style.top = ft.y + 'px';
+    };
+    const onUp = () => {
+      ftDragging = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      save();
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  return ft;
 }
 
 function clearAll() {
@@ -2024,9 +2153,11 @@ function closeConfirm() {
 
 function confirmClear() {
   canvas.querySelectorAll('.box').forEach(el => el.remove());
+  canvas.querySelectorAll('.free-text').forEach(el => el.remove());
   svgArrows.innerHTML = '';
   boxes = [];
   arrows = [];
+  freeTexts = [];
   selectedBoxId = null;
   save();
   closeConfirm();
@@ -2053,12 +2184,15 @@ function importJSON() {
     reader.onload = (ev) => {
       try {
         canvas.querySelectorAll('.box').forEach(el => el.remove());
+        canvas.querySelectorAll('.free-text').forEach(el => el.remove());
         svgArrows.innerHTML = '';
         const data = JSON.parse(ev.target.result);
         boxes = data.boxes || [];
         arrows = data.arrows || [];
         nextId = data.nextId || 1;
+        freeTexts = [];
         boxes.forEach(b => createBoxElement(b));
+        (data.freeTexts || []).forEach(ft => addFreeText(ft.x, ft.y, ft.text, ft.id));
         renderArrows();
         save();
       } catch(err) { alert('Invalid file'); }
