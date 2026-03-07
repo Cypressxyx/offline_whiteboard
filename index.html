@@ -152,16 +152,18 @@
     z-index: 1;
   }
 
-  svg#arrows line {
+  svg#arrows path.arrow-line {
     stroke: var(--arrow);
     stroke-width: 2;
+    fill: none;
     marker-end: url(#arrowhead);
     transition: stroke 0.15s;
   }
 
-  svg#arrows line.arrow-clickable {
+  svg#arrows path.arrow-clickable {
     stroke: transparent;
     stroke-width: 16;
+    fill: none;
     marker-end: none;
     pointer-events: stroke;
     cursor: pointer;
@@ -171,11 +173,12 @@
     to { stroke-dashoffset: -10; }
   }
 
-  svg#arrows line.arrow-selected {
+  svg#arrows path.arrow-selected {
     stroke: var(--accent);
     stroke-width: 2;
     stroke-dasharray: 5 3;
     animation: marchingAnts 0.35s linear infinite;
+    fill: none;
   }
 
   svg#arrows circle.arrow-endpoint {
@@ -323,6 +326,37 @@
     z-index: 1000;
     transition: background 0.3s, color 0.3s;
     white-space: nowrap;
+  }
+
+  /* Buy me a coffee */
+  #bmc-link {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    background: var(--toolbar-bg);
+    border-radius: 10px;
+    padding: 6px 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    z-index: 1000;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--btn-text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.3s, color 0.15s, transform 0.15s;
+  }
+
+  #bmc-link:hover {
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  #bmc-link svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
   }
 
   /* Zoom controls (bottom right) */
@@ -608,6 +642,11 @@
     </svg>
   </div>
 </div>
+
+<a id="bmc-link" href="https://buymeacoffee.com/bonsaitree92" target="_blank" rel="noopener">
+  <svg viewBox="0 0 24 24"><path d="M18.5 9H18V7c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v9c0 2.21 1.79 4 4 4h8c2.21 0 4-1.79 4-4v-1h.5c1.93 0 3.5-1.57 3.5-3.5S20.43 9 18.5 9zM16 16c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V7h12v9zm2.5-4H18v-1h.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5v-2z"/></svg>
+  Buy me a coffee
+</a>
 
 <div id="zoom-controls">
   <button onclick="zoomBy(-0.15)" title="Zoom out">-</button>
@@ -1442,31 +1481,32 @@ function deleteBox(id) {
 }
 
 // --- Arrow drag-to-connect ---
+let arrowPreviewAnchor = null; // { x, y }
+let arrowPreviewDir = null; // 'top'|'bottom'|'left'|'right'
+
 function startArrowDrag(fromId, side, sx, sy) {
   isArrowDragging = true;
   arrowFromId = fromId;
   arrowFromSide = side;
   arrowDropTarget = null;
 
-  // Create preview line in SVG
-  arrowPreviewLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  const fromBox = boxes.find(b => b.id === fromId);
+  arrowPreviewAnchor = getAnchor(fromBox, side);
+  arrowPreviewDir = side.split('-')[0];
+
+  arrowPreviewLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   arrowPreviewLine.setAttribute('stroke-dasharray', '6,4');
   arrowPreviewLine.setAttribute('opacity', '0.6');
-  const fromBox = boxes.find(b => b.id === fromId);
-  const anchor = getAnchor(fromBox, side);
+  arrowPreviewLine.classList.add('arrow-line', 'arrow-preview');
   const cp = screenToCanvas(sx, sy);
-  arrowPreviewLine.setAttribute('x1', anchor.x);
-  arrowPreviewLine.setAttribute('y1', anchor.y);
-  arrowPreviewLine.setAttribute('x2', cp.x);
-  arrowPreviewLine.setAttribute('y2', cp.y);
+  arrowPreviewLine.setAttribute('d', buildArrowPath(arrowPreviewAnchor, cp, arrowPreviewDir, arrowPreviewDir));
   svgArrows.appendChild(arrowPreviewLine);
 }
 
 function updateArrowDrag(sx, sy) {
   if (!isArrowDragging || !arrowPreviewLine) return;
   const cp = screenToCanvas(sx, sy);
-  arrowPreviewLine.setAttribute('x2', cp.x);
-  arrowPreviewLine.setAttribute('y2', cp.y);
+  arrowPreviewLine.setAttribute('d', buildArrowPath(arrowPreviewAnchor, cp, arrowPreviewDir, arrowPreviewDir));
 
   // Highlight drop target
   const hit = findBoxAt(cp.x, cp.y);
@@ -1507,18 +1547,12 @@ function endArrowDrag(sx, sy) {
     const toSide = closestSide(hit, cp.x, cp.y);
     arrows.push({ from: arrowFromId, to: hit.id, fromSide: arrowFromSide, toSide: toSide });
   } else {
-    // Spawn new box in the direction of the drag
-    const dir = arrowFromSide.split('-')[0];
-    let nx, ny;
-    const gap = ARROW_GAP;
-    switch (dir) {
-      case 'top':    nx = fromBox.x; ny = fromBox.y - fromBox.h - gap; break;
-      case 'bottom': nx = fromBox.x; ny = fromBox.y + fromBox.h + gap; break;
-      case 'left':   nx = fromBox.x - fromBox.w - gap; ny = fromBox.y; break;
-      case 'right':  nx = fromBox.x + fromBox.w + gap; ny = fromBox.y; break;
-    }
+    // Spawn new box where the cursor is
+    const nx = cp.x - fromBox.w / 2;
+    const ny = cp.y - fromBox.h / 2;
     const newBox = addBox(nx, ny, fromBox.w, fromBox.h, 'New Box');
-    arrows.push({ from: arrowFromId, to: newBox.id, fromSide: arrowFromSide });
+    const toSide = closestSide(newBox, cp.x, cp.y);
+    arrows.push({ from: arrowFromId, to: newBox.id, fromSide: arrowFromSide, toSide: toSide });
   }
   renderArrows();
   save();
@@ -1580,17 +1614,15 @@ function startArrowReconnect(idx, end, sx, sy) {
     arrowFromId = a.from;
   }
 
-  const anchor = getAnchor(fixedBox, fixedSide);
+  arrowPreviewAnchor = getAnchor(fixedBox, fixedSide);
+  arrowPreviewDir = fixedSide.split('-')[0];
   const cp = screenToCanvas(sx, sy);
 
-  arrowPreviewLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  arrowPreviewLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   arrowPreviewLine.setAttribute('stroke-dasharray', '6,4');
   arrowPreviewLine.setAttribute('opacity', '0.6');
-  // Fixed end at x1,y1 — dragging end at x2,y2
-  arrowPreviewLine.setAttribute('x1', anchor.x);
-  arrowPreviewLine.setAttribute('y1', anchor.y);
-  arrowPreviewLine.setAttribute('x2', cp.x);
-  arrowPreviewLine.setAttribute('y2', cp.y);
+  arrowPreviewLine.classList.add('arrow-line', 'arrow-preview');
+  arrowPreviewLine.setAttribute('d', buildArrowPath(arrowPreviewAnchor, cp, arrowPreviewDir, arrowPreviewDir));
   svgArrows.appendChild(arrowPreviewLine);
 
   // Hide the original arrow while reconnecting
@@ -1650,9 +1682,50 @@ function oppositeSide(side) {
   return `${opp}-${slot}`;
 }
 
+function buildArrowPath(start, end, fromDir, toDir) {
+  const dx = Math.abs(end.x - start.x);
+  const dy = Math.abs(end.y - start.y);
+
+  // Straight line if nearly aligned
+  if (dx < 5 && dy < 5) return `M${start.x},${start.y} L${end.x},${end.y}`;
+
+  // Is the target "ahead" in the exit direction?
+  const ahead =
+    (fromDir === 'top' && end.y <= start.y) ||
+    (fromDir === 'bottom' && end.y >= start.y) ||
+    (fromDir === 'left' && end.x <= start.x) ||
+    (fromDir === 'right' && end.x >= start.x);
+
+  const isHoriz = (fromDir === 'left' || fromDir === 'right');
+
+  // Straight line if aligned with exit axis
+  if (isHoriz && dy < 5) return `M${start.x},${start.y} L${end.x},${end.y}`;
+  if (!isHoriz && dx < 5) return `M${start.x},${start.y} L${end.x},${end.y}`;
+
+  if (ahead) {
+    // First leg follows exit direction
+    if (isHoriz) {
+      // Horizontal first → corner at (end.x, start.y)
+      return `M${start.x},${start.y} L${end.x},${start.y} L${end.x},${end.y}`;
+    } else {
+      // Vertical first → corner at (start.x, end.y)
+      return `M${start.x},${start.y} L${start.x},${end.y} L${end.x},${end.y}`;
+    }
+  } else {
+    // Target is behind exit — go perpendicular first
+    if (isHoriz) {
+      // Vertical first → corner at (start.x, end.y)
+      return `M${start.x},${start.y} L${start.x},${end.y} L${end.x},${end.y}`;
+    } else {
+      // Horizontal first → corner at (end.x, start.y)
+      return `M${start.x},${start.y} L${end.x},${start.y} L${end.x},${end.y}`;
+    }
+  }
+}
+
 function renderArrows() {
   // Remove all rendered arrow elements (not the preview dashed line)
-  svgArrows.querySelectorAll('line:not([stroke-dasharray]), circle.arrow-endpoint').forEach(l => l.remove());
+  svgArrows.querySelectorAll('path.arrow-line:not(.arrow-preview), path.arrow-clickable, circle.arrow-endpoint').forEach(l => l.remove());
   arrows.forEach((a, idx) => {
     const fromBox = boxes.find(b => b.id === a.from);
     const toBox = boxes.find(b => b.id === a.to);
@@ -1660,38 +1733,46 @@ function renderArrows() {
     const start = getAnchor(fromBox, a.fromSide);
     const endSide = a.toSide || oppositeSide(a.fromSide);
     const end = getAnchor(toBox, endSide);
+    const fromDir = a.fromSide.split('-')[0];
+    const toDir = endSide.split('-')[0];
 
     // Hide arrow being reconnected
     const isReconnecting = arrowReconnecting && arrowReconnecting.idx === idx;
 
-    // Visible line
+    const d = buildArrowPath(start, end, fromDir, toDir);
+
+    // Visible path
     if (!isReconnecting) {
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', start.x);
-      line.setAttribute('y1', start.y);
-      line.setAttribute('x2', end.x);
-      line.setAttribute('y2', end.y);
-      if (selectedArrowIdx === idx) line.classList.add('arrow-selected');
-      svgArrows.appendChild(line);
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      path.classList.add('arrow-line');
+      if (selectedArrowIdx === idx) path.classList.add('arrow-selected');
+      svgArrows.appendChild(path);
     }
 
     // Invisible fat hit area for clicking
     if (isReconnecting) return;
-    const hitLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    hitLine.setAttribute('x1', start.x);
-    hitLine.setAttribute('y1', start.y);
-    hitLine.setAttribute('x2', end.x);
-    hitLine.setAttribute('y2', end.y);
-    hitLine.classList.add('arrow-clickable');
-    hitLine.addEventListener('mousedown', (e) => {
+    const hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    hitPath.setAttribute('d', d);
+    hitPath.classList.add('arrow-clickable');
+    hitPath.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       selectArrow(idx);
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      const dFrom = Math.hypot(cp.x - start.x, cp.y - start.y);
+      const dTo = Math.hypot(cp.x - end.x, cp.y - end.y);
+      startArrowReconnect(idx, dFrom <= dTo ? 'from' : 'to', e.clientX, e.clientY);
     });
-    hitLine.addEventListener('touchstart', (e) => {
+    hitPath.addEventListener('touchstart', (e) => {
       e.stopPropagation();
       selectArrow(idx);
+      const t = e.touches[0];
+      const cp = screenToCanvas(t.clientX, t.clientY);
+      const dFrom = Math.hypot(cp.x - start.x, cp.y - start.y);
+      const dTo = Math.hypot(cp.x - end.x, cp.y - end.y);
+      startArrowReconnect(idx, dFrom <= dTo ? 'from' : 'to', t.clientX, t.clientY);
     });
-    svgArrows.appendChild(hitLine);
+    svgArrows.appendChild(hitPath);
 
     // Draggable endpoint circles on selected arrow
     if (selectedArrowIdx === idx) {
