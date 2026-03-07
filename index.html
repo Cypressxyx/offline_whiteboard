@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Whiteboard - System Design</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #f8f9fb;
+    --dot: #dde1e7;
+    --toolbar-bg: #ffffff;
+    --toolbar-shadow: 0 2px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+    --toolbar-title: #1e293b;
+    --toolbar-text: #64748b;
+    --btn-border: #e2e8f0;
+    --btn-text: #475569;
+    --btn-hover-bg: #f1f5f9;
+    --btn-hover-border: #cbd5e1;
+    --box-bg: #ffffff;
+    --box-border: #e2e8f0;
+    --box-hover-border: #cbd5e1;
+    --box-hover-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    --box-text: #334155;
+    --box-edit-bg: #f8fafc;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --accent-glow: rgba(59,130,246,0.15);
+    --arrow: #94a3b8;
+    --draw-preview-bg: rgba(59,130,246,0.04);
+    --hint-bg: #ffffff;
+    --hint-text: #94a3b8;
+    --modal-overlay: rgba(0,0,0,0.4);
+    --modal-bg: #ffffff;
+    --modal-text: #334155;
+    --modal-sub: #64748b;
+    --swatch-border: #e2e8f0;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+    transition: background 0.3s;
+    touch-action: none;
+  }
+
+  #toolbar {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--toolbar-bg);
+    border-radius: 12px;
+    padding: 8px 16px;
+    box-shadow: var(--toolbar-shadow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 1000;
+    font-size: 14px;
+    color: var(--toolbar-text);
+    transition: background 0.3s, color 0.3s;
+  }
+
+  #toolbar .title {
+    font-weight: 600;
+    color: var(--toolbar-title);
+    letter-spacing: -0.3px;
+  }
+
+  #toolbar .sep { color: var(--btn-border); }
+
+  #toolbar button {
+    background: none;
+    border: 1px solid var(--btn-border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--btn-text);
+    transition: all 0.15s;
+    font-family: var(--font);
+  }
+
+  #toolbar button:hover {
+    background: var(--btn-hover-bg);
+    border-color: var(--btn-hover-border);
+  }
+
+  .icon-btn {
+    background: none !important;
+    border: none !important;
+    padding: 4px 6px !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--btn-text);
+    transition: color 0.15s, transform 0.3s;
+  }
+
+  .icon-btn:hover {
+    color: var(--accent) !important;
+    background: none !important;
+  }
+
+  .gear-btn:hover { transform: rotate(30deg); }
+
+  .icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+  /* Viewport */
+  #viewport {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    cursor: crosshair;
+    background: var(--bg);
+    transition: background 0.3s;
+  }
+
+  /* Infinite dot grid rendered via CSS on viewport */
+  #viewport {
+    --grid-size: 24px;
+    background-image: radial-gradient(circle, var(--dot) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    background-position: 0px 0px;
+  }
+
+  /* The pannable/zoomable canvas */
+  #canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    transform-origin: 0 0;
+  }
+
+  svg#arrows {
+    position: absolute;
+    top: 0; left: 0;
+    width: 1px; height: 1px;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  svg#arrows line {
+    stroke: var(--arrow);
+    stroke-width: 2;
+    marker-end: url(#arrowhead);
+    transition: stroke 0.3s;
+  }
+
+  .box {
+    position: absolute;
+    min-width: 140px;
+    min-height: 70px;
+    background: var(--box-bg);
+    border: 2px solid var(--box-border);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    z-index: 2;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s, border-color 0.2s, background 0.3s;
+  }
+
+  .box:hover {
+    box-shadow: var(--box-hover-shadow);
+    border-color: var(--box-hover-border);
+  }
+
+  .box.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow), var(--box-hover-shadow);
+  }
+
+  .box.dragging { cursor: grabbing; }
+
+  .box-text {
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--box-text);
+    outline: none;
+    width: 100%;
+    line-height: 1.4;
+    word-break: break-word;
+    transition: color 0.3s;
+  }
+
+  .box-text[contenteditable="true"] {
+    cursor: text;
+    background: var(--box-edit-bg);
+    border-radius: 8px;
+    margin: 4px;
+    padding: 8px 12px;
+  }
+
+  .edge-handle {
+    position: absolute;
+    background: var(--accent);
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s, transform 0.15s;
+    cursor: pointer;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .edge-handle svg { width: 12px; height: 12px; fill: #fff; }
+
+  .box:hover .edge-handle { opacity: 1; pointer-events: auto; }
+
+  .edge-handle:hover { transform: scale(1.2); background: var(--accent-hover); }
+
+  .edge-handle.top    { top: -10px;   left: 50%;  transform: translateX(-50%); }
+  .edge-handle.bottom { bottom: -10px;left: 50%;  transform: translateX(-50%); }
+  .edge-handle.left   { left: -10px;  top: 50%;   transform: translateY(-50%); }
+  .edge-handle.right  { right: -10px; top: 50%;   transform: translateY(-50%); }
+
+  .box:hover .edge-handle.top:hover    { transform: translateX(-50%) scale(1.2); }
+  .box:hover .edge-handle.bottom:hover { transform: translateX(-50%) scale(1.2); }
+  .box:hover .edge-handle.left:hover   { transform: translateY(-50%) scale(1.2); }
+  .box:hover .edge-handle.right:hover  { transform: translateY(-50%) scale(1.2); }
+
+  .draw-preview {
+    position: absolute;
+    border: 2px dashed var(--accent);
+    border-radius: 12px;
+    background: var(--draw-preview-bg);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--hint-bg);
+    border-radius: 10px;
+    padding: 8px 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    font-size: 12px;
+    color: var(--hint-text);
+    z-index: 1000;
+    transition: background 0.3s, color 0.3s;
+    white-space: nowrap;
+  }
+
+  /* Zoom controls (bottom right) */
+  #zoom-controls {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--toolbar-bg);
+    border-radius: 10px;
+    padding: 4px 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    z-index: 1000;
+    transition: background 0.3s;
+  }
+
+  #zoom-controls button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--btn-text);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+    font-family: var(--font);
+  }
+
+  #zoom-controls button:hover {
+    background: var(--btn-hover-bg);
+    color: var(--accent);
+  }
+
+  #zoom-level {
+    font-size: 12px;
+    color: var(--hint-text);
+    min-width: 42px;
+    text-align: center;
+    cursor: pointer;
+    padding: 4px 2px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  #zoom-level:hover { color: var(--accent); }
+
+  /* Panning cursor */
+  #viewport.panning { cursor: grab; }
+  #viewport.panning-active { cursor: grabbing; }
+
+  /* ---- Theme Modal ---- */
+  #theme-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--modal-overlay);
+    z-index: 9998;
+    animation: fadeIn 0.2s;
+  }
+
+  #theme-modal {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--modal-bg);
+    border-radius: 16px;
+    padding: 28px 32px;
+    z-index: 9999;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+    min-width: 520px;
+    max-width: 600px;
+    animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background 0.3s;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scaleIn { from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+  #theme-modal h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--modal-text);
+    margin-bottom: 4px;
+  }
+
+  #theme-modal p {
+    font-size: 13px;
+    color: var(--modal-sub);
+    margin-bottom: 20px;
+  }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .theme-grid::-webkit-scrollbar { width: 6px; }
+  .theme-grid::-webkit-scrollbar-track { background: transparent; }
+  .theme-grid::-webkit-scrollbar-thumb { background: var(--btn-border); border-radius: 3px; }
+
+  .theme-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 2px solid var(--swatch-border);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+  }
+
+  .theme-option:hover {
+    border-color: var(--accent);
+    background: var(--draw-preview-bg);
+  }
+
+  .theme-option.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .theme-swatch {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+
+  .theme-swatch-inner {
+    width: 16px; height: 12px;
+    border-radius: 3px;
+    border: 1.5px solid;
+  }
+
+  .theme-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--modal-text);
+  }
+
+  .theme-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--modal-sub);
+    padding: 4px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    line-height: 0;
+  }
+
+  .theme-close:hover { background: var(--btn-hover-bg); }
+  .theme-close svg { width: 18px; height: 18px; fill: currentColor; }
+
+  /* ---- Confirm Modal ---- */
+  #confirm-modal {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--modal-bg);
+    border-radius: 16px;
+    padding: 28px 32px;
+    z-index: 9999;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+    min-width: 340px;
+    max-width: 400px;
+    animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background 0.3s;
+    text-align: center;
+  }
+
+  #confirm-modal h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--modal-text);
+    margin-bottom: 8px;
+  }
+
+  #confirm-modal p {
+    font-size: 13px;
+    color: var(--modal-sub);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .confirm-actions button {
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font);
+    border: 1px solid var(--btn-border);
+    background: none;
+    color: var(--btn-text);
+  }
+
+  .confirm-actions button:hover {
+    background: var(--btn-hover-bg);
+    border-color: var(--btn-hover-border);
+  }
+
+  .confirm-actions .btn-danger {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+  }
+
+  .confirm-actions .btn-danger:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+  }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span class="title">Whiteboard</span>
+  <span class="sep">|</span>
+  <button onclick="clearAll()">Clear All</button>
+  <button onclick="exportJSON()">Save</button>
+  <button onclick="importJSON()">Load</button>
+  <span class="sep">|</span>
+  <button class="icon-btn" onclick="resetView()" title="Reset view">
+    <svg viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
+  </button>
+  <button class="icon-btn gear-btn" onclick="openThemeModal()" title="Themes">
+    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+  </button>
+</div>
+
+<div id="theme-overlay" onclick="closeThemeModal()"></div>
+<div id="theme-modal">
+  <button class="theme-close" onclick="closeThemeModal()">
+    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+  </button>
+  <h2>Choose a Theme</h2>
+  <p>Pick a color scheme for your whiteboard</p>
+  <div class="theme-grid" id="theme-grid"></div>
+</div>
+
+<div id="confirm-overlay" style="display:none;position:fixed;inset:0;background:var(--modal-overlay);z-index:9998;animation:fadeIn 0.2s" onclick="closeConfirm()"></div>
+<div id="confirm-modal">
+  <h2>Clear everything?</h2>
+  <p>This will remove all boxes and connections.<br>This action cannot be undone.</p>
+  <div class="confirm-actions">
+    <button onclick="closeConfirm()">Cancel</button>
+    <button class="btn-danger" onclick="confirmClear()">Clear All</button>
+  </div>
+</div>
+
+<div id="viewport">
+  <div id="canvas">
+    <svg id="arrows">
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="var(--arrow)"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+</div>
+
+<div id="zoom-controls">
+  <button onclick="zoomBy(-0.15)" title="Zoom out">-</button>
+  <span id="zoom-level" onclick="resetView()" title="Reset zoom">100%</span>
+  <button onclick="zoomBy(0.15)" title="Zoom in">+</button>
+</div>
+
+<div class="hint">Scroll to pan &middot; Pinch or Ctrl+Scroll to zoom &middot; Click to place box &middot; Double-click to edit &middot; Hover edges for arrows</div>
+
+<script>
+// ============== CAMERA (Pan & Zoom) ==============
+let panX = 0, panY = 0, scale = 1;
+const MIN_SCALE = 0.1, MAX_SCALE = 5;
+const viewport = document.getElementById('viewport');
+const canvas = document.getElementById('canvas');
+
+function updateTransform() {
+  canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+  // Update grid to match
+  const gs = 24 * scale;
+  viewport.style.backgroundSize = `${gs}px ${gs}px`;
+  viewport.style.backgroundPosition = `${panX}px ${panY}px`;
+  // Update zoom display
+  document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
+}
+
+function screenToCanvas(sx, sy) {
+  return { x: (sx - panX) / scale, y: (sy - panY) / scale };
+}
+
+function zoomAt(cx, cy, delta) {
+  const oldScale = scale;
+  scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * (1 + delta)));
+  // Adjust pan so the point under cursor stays fixed
+  panX = cx - (cx - panX) * (scale / oldScale);
+  panY = cy - (cy - panY) * (scale / oldScale);
+  updateTransform();
+}
+
+function zoomBy(delta) {
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  zoomAt(cx, cy, delta);
+}
+
+function resetView() {
+  panX = 0; panY = 0; scale = 1;
+  updateTransform();
+}
+
+// --- Wheel: pan & zoom ---
+viewport.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey) {
+    // Pinch-to-zoom on trackpad or Ctrl+scroll
+    const delta = -e.deltaY * 0.01;
+    zoomAt(e.clientX, e.clientY, delta);
+  } else {
+    // Pan
+    panX -= e.deltaX;
+    panY -= e.deltaY;
+    updateTransform();
+  }
+}, { passive: false });
+
+// --- Touch: pinch-to-zoom & pan ---
+let touches = {};
+let lastTouchDist = null;
+let lastTouchCenter = null;
+let touchIsPan = false;
+
+viewport.addEventListener('touchstart', (e) => {
+  for (const t of e.changedTouches) touches[t.identifier] = { x: t.clientX, y: t.clientY };
+  const keys = Object.keys(touches);
+  if (keys.length === 2) {
+    const [a, b] = keys.map(k => touches[k]);
+    lastTouchDist = Math.hypot(a.x - b.x, a.y - b.y);
+    lastTouchCenter = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    e.preventDefault();
+  } else if (keys.length === 1) {
+    touchIsPan = false;
+  }
+}, { passive: false });
+
+viewport.addEventListener('touchmove', (e) => {
+  for (const t of e.changedTouches) touches[t.identifier] = { x: t.clientX, y: t.clientY };
+  const keys = Object.keys(touches);
+  if (keys.length === 2) {
+    e.preventDefault();
+    const [a, b] = keys.map(k => touches[k]);
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    const center = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    if (lastTouchDist) {
+      const delta = (dist - lastTouchDist) / lastTouchDist;
+      zoomAt(center.x, center.y, delta);
+    }
+    if (lastTouchCenter) {
+      panX += center.x - lastTouchCenter.x;
+      panY += center.y - lastTouchCenter.y;
+      updateTransform();
+    }
+    lastTouchDist = dist;
+    lastTouchCenter = center;
+  }
+}, { passive: false });
+
+viewport.addEventListener('touchend', (e) => {
+  for (const t of e.changedTouches) delete touches[t.identifier];
+  if (Object.keys(touches).length < 2) {
+    lastTouchDist = null;
+    lastTouchCenter = null;
+  }
+});
+
+viewport.addEventListener('touchcancel', (e) => {
+  for (const t of e.changedTouches) delete touches[t.identifier];
+  lastTouchDist = null;
+  lastTouchCenter = null;
+});
+
+// --- Middle-mouse or Space+drag to pan ---
+let isPanning = false;
+let panStart = null;
+let spaceHeld = false;
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && e.target.contentEditable !== 'true' && !e.repeat) {
+    e.preventDefault();
+    spaceHeld = true;
+    viewport.classList.add('panning');
+  }
+  if (e.target.contentEditable === 'true') return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedBoxId != null) {
+    e.preventDefault();
+    deleteBox(selectedBoxId);
+  }
+  if (e.key === 'Escape') closeThemeModal();
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.code === 'Space') {
+    spaceHeld = false;
+    if (!isPanning) viewport.classList.remove('panning');
+  }
+});
+
+// ============== THEMES ==============
+const THEMES = {
+  light: {
+    name: 'Light',
+    bg: '#f8f9fb', dot: '#dde1e7',
+    toolbarBg: '#ffffff', toolbarShadow: '0 2px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)',
+    toolbarTitle: '#1e293b', toolbarText: '#64748b',
+    btnBorder: '#e2e8f0', btnText: '#475569', btnHoverBg: '#f1f5f9', btnHoverBorder: '#cbd5e1',
+    boxBg: '#ffffff', boxBorder: '#e2e8f0', boxHoverBorder: '#cbd5e1',
+    boxHoverShadow: '0 4px 16px rgba(0,0,0,0.08)', boxText: '#334155', boxEditBg: '#f8fafc',
+    accent: '#3b82f6', accentHover: '#2563eb', accentGlow: 'rgba(59,130,246,0.15)',
+    arrow: '#94a3b8', drawPreviewBg: 'rgba(59,130,246,0.04)',
+    hintBg: '#ffffff', hintText: '#94a3b8',
+    modalOverlay: 'rgba(0,0,0,0.4)', modalBg: '#ffffff', modalText: '#334155', modalSub: '#64748b',
+    swatchBorder: '#e2e8f0',
+    swatchBg: '#f8f9fb', swatchBox: '#e2e8f0', swatchBoxBorder: '#94a3b8'
+  },
+  nord: {
+    name: 'Nord',
+    bg: '#2e3440', dot: '#3b4252',
+    toolbarBg: '#3b4252', toolbarShadow: '0 2px 16px rgba(0,0,0,0.3)',
+    toolbarTitle: '#eceff4', toolbarText: '#d8dee9',
+    btnBorder: '#4c566a', btnText: '#d8dee9', btnHoverBg: '#434c5e', btnHoverBorder: '#5e6779',
+    boxBg: '#3b4252', boxBorder: '#4c566a', boxHoverBorder: '#5e6779',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.3)', boxText: '#eceff4', boxEditBg: '#2e3440',
+    accent: '#88c0d0', accentHover: '#8fbcbb', accentGlow: 'rgba(136,192,208,0.2)',
+    arrow: '#81a1c1', drawPreviewBg: 'rgba(136,192,208,0.08)',
+    hintBg: '#3b4252', hintText: '#81a1c1',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#3b4252', modalText: '#eceff4', modalSub: '#81a1c1',
+    swatchBorder: '#4c566a',
+    swatchBg: '#2e3440', swatchBox: '#88c0d0', swatchBoxBorder: '#88c0d0'
+  },
+  dracula: {
+    name: 'Dracula',
+    bg: '#282a36', dot: '#44475a',
+    toolbarBg: '#44475a', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#f8f8f2', toolbarText: '#bd93f9',
+    btnBorder: '#6272a4', btnText: '#f8f8f2', btnHoverBg: '#6272a4', btnHoverBorder: '#bd93f9',
+    boxBg: '#44475a', boxBorder: '#6272a4', boxHoverBorder: '#bd93f9',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#f8f8f2', boxEditBg: '#282a36',
+    accent: '#bd93f9', accentHover: '#ff79c6', accentGlow: 'rgba(189,147,249,0.2)',
+    arrow: '#6272a4', drawPreviewBg: 'rgba(189,147,249,0.08)',
+    hintBg: '#44475a', hintText: '#6272a4',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#44475a', modalText: '#f8f8f2', modalSub: '#bd93f9',
+    swatchBorder: '#6272a4',
+    swatchBg: '#282a36', swatchBox: '#bd93f9', swatchBoxBorder: '#bd93f9'
+  },
+  monokai: {
+    name: 'Monokai',
+    bg: '#272822', dot: '#3e3d32',
+    toolbarBg: '#3e3d32', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#f8f8f2', toolbarText: '#a6e22e',
+    btnBorder: '#75715e', btnText: '#f8f8f2', btnHoverBg: '#49483e', btnHoverBorder: '#a6e22e',
+    boxBg: '#3e3d32', boxBorder: '#75715e', boxHoverBorder: '#a6e22e',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#f8f8f2', boxEditBg: '#272822',
+    accent: '#a6e22e', accentHover: '#f92672', accentGlow: 'rgba(166,226,46,0.2)',
+    arrow: '#75715e', drawPreviewBg: 'rgba(166,226,46,0.08)',
+    hintBg: '#3e3d32', hintText: '#75715e',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#3e3d32', modalText: '#f8f8f2', modalSub: '#a6e22e',
+    swatchBorder: '#75715e',
+    swatchBg: '#272822', swatchBox: '#a6e22e', swatchBoxBorder: '#a6e22e'
+  },
+  solarized: {
+    name: 'Solarized',
+    bg: '#002b36', dot: '#073642',
+    toolbarBg: '#073642', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#fdf6e3', toolbarText: '#2aa198',
+    btnBorder: '#586e75', btnText: '#93a1a1', btnHoverBg: '#0a4a5c', btnHoverBorder: '#2aa198',
+    boxBg: '#073642', boxBorder: '#586e75', boxHoverBorder: '#2aa198',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#fdf6e3', boxEditBg: '#002b36',
+    accent: '#2aa198', accentHover: '#268bd2', accentGlow: 'rgba(42,161,152,0.2)',
+    arrow: '#586e75', drawPreviewBg: 'rgba(42,161,152,0.08)',
+    hintBg: '#073642', hintText: '#586e75',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#073642', modalText: '#fdf6e3', modalSub: '#2aa198',
+    swatchBorder: '#586e75',
+    swatchBg: '#002b36', swatchBox: '#2aa198', swatchBoxBorder: '#2aa198'
+  },
+  gruvbox: {
+    name: 'Gruvbox',
+    bg: '#282828', dot: '#3c3836',
+    toolbarBg: '#3c3836', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#ebdbb2', toolbarText: '#fe8019',
+    btnBorder: '#665c54', btnText: '#ebdbb2', btnHoverBg: '#504945', btnHoverBorder: '#fe8019',
+    boxBg: '#3c3836', boxBorder: '#665c54', boxHoverBorder: '#fe8019',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#ebdbb2', boxEditBg: '#282828',
+    accent: '#fe8019', accentHover: '#fabd2f', accentGlow: 'rgba(254,128,25,0.2)',
+    arrow: '#a89984', drawPreviewBg: 'rgba(254,128,25,0.08)',
+    hintBg: '#3c3836', hintText: '#a89984',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#3c3836', modalText: '#ebdbb2', modalSub: '#fe8019',
+    swatchBorder: '#665c54',
+    swatchBg: '#282828', swatchBox: '#fe8019', swatchBoxBorder: '#fe8019'
+  },
+  catppuccin: {
+    name: 'Catppuccin',
+    bg: '#1e1e2e', dot: '#313244',
+    toolbarBg: '#313244', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#cdd6f4', toolbarText: '#cba6f7',
+    btnBorder: '#45475a', btnText: '#cdd6f4', btnHoverBg: '#45475a', btnHoverBorder: '#cba6f7',
+    boxBg: '#313244', boxBorder: '#45475a', boxHoverBorder: '#cba6f7',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#cdd6f4', boxEditBg: '#1e1e2e',
+    accent: '#cba6f7', accentHover: '#f38ba8', accentGlow: 'rgba(203,166,247,0.2)',
+    arrow: '#6c7086', drawPreviewBg: 'rgba(203,166,247,0.08)',
+    hintBg: '#313244', hintText: '#6c7086',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#313244', modalText: '#cdd6f4', modalSub: '#cba6f7',
+    swatchBorder: '#45475a',
+    swatchBg: '#1e1e2e', swatchBox: '#cba6f7', swatchBoxBorder: '#cba6f7'
+  },
+  tokyo: {
+    name: 'Tokyo Night',
+    bg: '#1a1b26', dot: '#24283b',
+    toolbarBg: '#24283b', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#c0caf5', toolbarText: '#7aa2f7',
+    btnBorder: '#3b4261', btnText: '#a9b1d6', btnHoverBg: '#3b4261', btnHoverBorder: '#7aa2f7',
+    boxBg: '#24283b', boxBorder: '#3b4261', boxHoverBorder: '#7aa2f7',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#c0caf5', boxEditBg: '#1a1b26',
+    accent: '#7aa2f7', accentHover: '#bb9af7', accentGlow: 'rgba(122,162,247,0.2)',
+    arrow: '#565f89', drawPreviewBg: 'rgba(122,162,247,0.08)',
+    hintBg: '#24283b', hintText: '#565f89',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#24283b', modalText: '#c0caf5', modalSub: '#7aa2f7',
+    swatchBorder: '#3b4261',
+    swatchBg: '#1a1b26', swatchBox: '#7aa2f7', swatchBoxBorder: '#7aa2f7'
+  },
+  rosepine: {
+    name: 'Rose Pine',
+    bg: '#191724', dot: '#26233a',
+    toolbarBg: '#26233a', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#e0def4', toolbarText: '#c4a7e7',
+    btnBorder: '#403d52', btnText: '#e0def4', btnHoverBg: '#403d52', btnHoverBorder: '#c4a7e7',
+    boxBg: '#26233a', boxBorder: '#403d52', boxHoverBorder: '#c4a7e7',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#e0def4', boxEditBg: '#191724',
+    accent: '#c4a7e7', accentHover: '#ebbcba', accentGlow: 'rgba(196,167,231,0.2)',
+    arrow: '#6e6a86', drawPreviewBg: 'rgba(196,167,231,0.08)',
+    hintBg: '#26233a', hintText: '#6e6a86',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#26233a', modalText: '#e0def4', modalSub: '#c4a7e7',
+    swatchBorder: '#403d52',
+    swatchBg: '#191724', swatchBox: '#c4a7e7', swatchBoxBorder: '#c4a7e7'
+  },
+  matrix: {
+    name: 'Matrix',
+    bg: '#0a0a0a', dot: '#0f1a0f',
+    toolbarBg: '#111811', toolbarShadow: '0 2px 16px rgba(0,255,0,0.06)',
+    toolbarTitle: '#00ff41', toolbarText: '#00cc33',
+    btnBorder: '#1a3a1a', btnText: '#00ff41', btnHoverBg: '#1a3a1a', btnHoverBorder: '#00ff41',
+    boxBg: '#111811', boxBorder: '#1a3a1a', boxHoverBorder: '#00ff41',
+    boxHoverShadow: '0 4px 20px rgba(0,255,65,0.1)', boxText: '#00ff41', boxEditBg: '#0a0a0a',
+    accent: '#00ff41', accentHover: '#00cc33', accentGlow: 'rgba(0,255,65,0.15)',
+    arrow: '#1a5a1a', drawPreviewBg: 'rgba(0,255,65,0.05)',
+    hintBg: '#111811', hintText: '#1a5a1a',
+    modalOverlay: 'rgba(0,0,0,0.6)', modalBg: '#111811', modalText: '#00ff41', modalSub: '#00cc33',
+    swatchBorder: '#1a3a1a',
+    swatchBg: '#0a0a0a', swatchBox: '#00ff41', swatchBoxBorder: '#00ff41'
+  },
+  kanagawa: {
+    name: 'Kanagawa Dragon',
+    bg: '#181616', dot: '#282727',
+    toolbarBg: '#282727', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#c8c093', toolbarText: '#a6a69c',
+    btnBorder: '#393836', btnText: '#c8c093', btnHoverBg: '#393836', btnHoverBorder: '#e6c384',
+    boxBg: '#282727', boxBorder: '#393836', boxHoverBorder: '#e6c384',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#c8c093', boxEditBg: '#181616',
+    accent: '#e6c384', accentHover: '#ff5d62', accentGlow: 'rgba(230,195,132,0.2)',
+    arrow: '#54546d', drawPreviewBg: 'rgba(230,195,132,0.08)',
+    hintBg: '#282727', hintText: '#54546d',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#282727', modalText: '#c8c093', modalSub: '#a6a69c',
+    swatchBorder: '#393836',
+    swatchBg: '#181616', swatchBox: '#e6c384', swatchBoxBorder: '#e6c384'
+  },
+  kanagawaLight: {
+    name: 'Kanagawa Lotus',
+    bg: '#f2ecbc', dot: '#e7dba0',
+    toolbarBg: '#e7dba0', toolbarShadow: '0 2px 12px rgba(0,0,0,0.08)',
+    toolbarTitle: '#545464', toolbarText: '#8a8980',
+    btnBorder: '#d7ca9e', btnText: '#545464', btnHoverBg: '#dcd1a8', btnHoverBorder: '#957fb8',
+    boxBg: '#e7dba0', boxBorder: '#d7ca9e', boxHoverBorder: '#957fb8',
+    boxHoverShadow: '0 4px 16px rgba(0,0,0,0.08)', boxText: '#545464', boxEditBg: '#f2ecbc',
+    accent: '#957fb8', accentHover: '#d7827e', accentGlow: 'rgba(149,127,184,0.2)',
+    arrow: '#8a8980', drawPreviewBg: 'rgba(149,127,184,0.06)',
+    hintBg: '#e7dba0', hintText: '#8a8980',
+    modalOverlay: 'rgba(0,0,0,0.3)', modalBg: '#e7dba0', modalText: '#545464', modalSub: '#8a8980',
+    swatchBorder: '#d7ca9e',
+    swatchBg: '#f2ecbc', swatchBox: '#957fb8', swatchBoxBorder: '#957fb8'
+  },
+  kanagawaWave: {
+    name: 'Kanagawa Wave',
+    bg: '#1f1f28', dot: '#2a2a37',
+    toolbarBg: '#2a2a37', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#dcd7ba', toolbarText: '#727169',
+    btnBorder: '#363646', btnText: '#dcd7ba', btnHoverBg: '#363646', btnHoverBorder: '#7e9cd8',
+    boxBg: '#2a2a37', boxBorder: '#363646', boxHoverBorder: '#7e9cd8',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#dcd7ba', boxEditBg: '#1f1f28',
+    accent: '#7e9cd8', accentHover: '#957fb8', accentGlow: 'rgba(126,156,216,0.2)',
+    arrow: '#54546d', drawPreviewBg: 'rgba(126,156,216,0.08)',
+    hintBg: '#2a2a37', hintText: '#54546d',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#2a2a37', modalText: '#dcd7ba', modalSub: '#727169',
+    swatchBorder: '#363646',
+    swatchBg: '#1f1f28', swatchBox: '#7e9cd8', swatchBoxBorder: '#7e9cd8'
+  },
+  onedark: {
+    name: 'One Dark',
+    bg: '#282c34', dot: '#3e4451',
+    toolbarBg: '#21252b', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#abb2bf', toolbarText: '#61afef',
+    btnBorder: '#3e4451', btnText: '#abb2bf', btnHoverBg: '#3e4451', btnHoverBorder: '#61afef',
+    boxBg: '#21252b', boxBorder: '#3e4451', boxHoverBorder: '#61afef',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#abb2bf', boxEditBg: '#282c34',
+    accent: '#61afef', accentHover: '#c678dd', accentGlow: 'rgba(97,175,239,0.2)',
+    arrow: '#5c6370', drawPreviewBg: 'rgba(97,175,239,0.08)',
+    hintBg: '#21252b', hintText: '#5c6370',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#21252b', modalText: '#abb2bf', modalSub: '#61afef',
+    swatchBorder: '#3e4451',
+    swatchBg: '#282c34', swatchBox: '#61afef', swatchBoxBorder: '#61afef'
+  },
+  onelight: {
+    name: 'One Light',
+    bg: '#fafafa', dot: '#e5e5e6',
+    toolbarBg: '#ffffff', toolbarShadow: '0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)',
+    toolbarTitle: '#383a42', toolbarText: '#a0a1a7',
+    btnBorder: '#e5e5e6', btnText: '#383a42', btnHoverBg: '#f0f0f1', btnHoverBorder: '#4078f2',
+    boxBg: '#ffffff', boxBorder: '#e5e5e6', boxHoverBorder: '#4078f2',
+    boxHoverShadow: '0 4px 16px rgba(0,0,0,0.06)', boxText: '#383a42', boxEditBg: '#fafafa',
+    accent: '#4078f2', accentHover: '#a626a4', accentGlow: 'rgba(64,120,242,0.12)',
+    arrow: '#a0a1a7', drawPreviewBg: 'rgba(64,120,242,0.04)',
+    hintBg: '#ffffff', hintText: '#a0a1a7',
+    modalOverlay: 'rgba(0,0,0,0.3)', modalBg: '#ffffff', modalText: '#383a42', modalSub: '#a0a1a7',
+    swatchBorder: '#e5e5e6',
+    swatchBg: '#fafafa', swatchBox: '#4078f2', swatchBoxBorder: '#4078f2'
+  },
+  github: {
+    name: 'GitHub Dark',
+    bg: '#0d1117', dot: '#161b22',
+    toolbarBg: '#161b22', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#c9d1d9', toolbarText: '#8b949e',
+    btnBorder: '#30363d', btnText: '#c9d1d9', btnHoverBg: '#21262d', btnHoverBorder: '#58a6ff',
+    boxBg: '#161b22', boxBorder: '#30363d', boxHoverBorder: '#58a6ff',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#c9d1d9', boxEditBg: '#0d1117',
+    accent: '#58a6ff', accentHover: '#1f6feb', accentGlow: 'rgba(88,166,255,0.15)',
+    arrow: '#484f58', drawPreviewBg: 'rgba(88,166,255,0.06)',
+    hintBg: '#161b22', hintText: '#484f58',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#161b22', modalText: '#c9d1d9', modalSub: '#8b949e',
+    swatchBorder: '#30363d',
+    swatchBg: '#0d1117', swatchBox: '#58a6ff', swatchBoxBorder: '#58a6ff'
+  },
+  githubLight: {
+    name: 'GitHub Light',
+    bg: '#ffffff', dot: '#e8eaed',
+    toolbarBg: '#f6f8fa', toolbarShadow: '0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)',
+    toolbarTitle: '#24292f', toolbarText: '#57606a',
+    btnBorder: '#d0d7de', btnText: '#24292f', btnHoverBg: '#eaeef2', btnHoverBorder: '#0969da',
+    boxBg: '#f6f8fa', boxBorder: '#d0d7de', boxHoverBorder: '#0969da',
+    boxHoverShadow: '0 4px 16px rgba(0,0,0,0.06)', boxText: '#24292f', boxEditBg: '#ffffff',
+    accent: '#0969da', accentHover: '#0550ae', accentGlow: 'rgba(9,105,218,0.12)',
+    arrow: '#8c959f', drawPreviewBg: 'rgba(9,105,218,0.04)',
+    hintBg: '#f6f8fa', hintText: '#8c959f',
+    modalOverlay: 'rgba(0,0,0,0.3)', modalBg: '#f6f8fa', modalText: '#24292f', modalSub: '#57606a',
+    swatchBorder: '#d0d7de',
+    swatchBg: '#ffffff', swatchBox: '#0969da', swatchBoxBorder: '#0969da'
+  },
+  ayu: {
+    name: 'Ayu Dark',
+    bg: '#0b0e14', dot: '#11151c',
+    toolbarBg: '#11151c', toolbarShadow: '0 2px 16px rgba(0,0,0,0.5)',
+    toolbarTitle: '#bfbdb6', toolbarText: '#565b66',
+    btnBorder: '#1c2029', btnText: '#bfbdb6', btnHoverBg: '#1c2029', btnHoverBorder: '#e6b450',
+    boxBg: '#11151c', boxBorder: '#1c2029', boxHoverBorder: '#e6b450',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.5)', boxText: '#bfbdb6', boxEditBg: '#0b0e14',
+    accent: '#e6b450', accentHover: '#f29668', accentGlow: 'rgba(230,180,80,0.15)',
+    arrow: '#3d424d', drawPreviewBg: 'rgba(230,180,80,0.06)',
+    hintBg: '#11151c', hintText: '#3d424d',
+    modalOverlay: 'rgba(0,0,0,0.6)', modalBg: '#11151c', modalText: '#bfbdb6', modalSub: '#565b66',
+    swatchBorder: '#1c2029',
+    swatchBg: '#0b0e14', swatchBox: '#e6b450', swatchBoxBorder: '#e6b450'
+  },
+  ayuLight: {
+    name: 'Ayu Light',
+    bg: '#fcfcfc', dot: '#e8e8e8',
+    toolbarBg: '#f3f3f3', toolbarShadow: '0 2px 12px rgba(0,0,0,0.05)',
+    toolbarTitle: '#5c6166', toolbarText: '#8a9199',
+    btnBorder: '#dcdcdc', btnText: '#5c6166', btnHoverBg: '#eaeaea', btnHoverBorder: '#f2ae49',
+    boxBg: '#f3f3f3', boxBorder: '#dcdcdc', boxHoverBorder: '#f2ae49',
+    boxHoverShadow: '0 4px 16px rgba(0,0,0,0.06)', boxText: '#5c6166', boxEditBg: '#fcfcfc',
+    accent: '#f2ae49', accentHover: '#fa8d3e', accentGlow: 'rgba(242,174,73,0.15)',
+    arrow: '#abb0b6', drawPreviewBg: 'rgba(242,174,73,0.06)',
+    hintBg: '#f3f3f3', hintText: '#abb0b6',
+    modalOverlay: 'rgba(0,0,0,0.3)', modalBg: '#f3f3f3', modalText: '#5c6166', modalSub: '#8a9199',
+    swatchBorder: '#dcdcdc',
+    swatchBg: '#fcfcfc', swatchBox: '#f2ae49', swatchBoxBorder: '#f2ae49'
+  },
+  everforest: {
+    name: 'Everforest',
+    bg: '#2d353b', dot: '#343f44',
+    toolbarBg: '#343f44', toolbarShadow: '0 2px 16px rgba(0,0,0,0.3)',
+    toolbarTitle: '#d3c6aa', toolbarText: '#859289',
+    btnBorder: '#475258', btnText: '#d3c6aa', btnHoverBg: '#475258', btnHoverBorder: '#a7c080',
+    boxBg: '#343f44', boxBorder: '#475258', boxHoverBorder: '#a7c080',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.3)', boxText: '#d3c6aa', boxEditBg: '#2d353b',
+    accent: '#a7c080', accentHover: '#83c092', accentGlow: 'rgba(167,192,128,0.2)',
+    arrow: '#859289', drawPreviewBg: 'rgba(167,192,128,0.08)',
+    hintBg: '#343f44', hintText: '#859289',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#343f44', modalText: '#d3c6aa', modalSub: '#859289',
+    swatchBorder: '#475258',
+    swatchBg: '#2d353b', swatchBox: '#a7c080', swatchBoxBorder: '#a7c080'
+  },
+  nightowl: {
+    name: 'Night Owl',
+    bg: '#011627', dot: '#0b2942',
+    toolbarBg: '#0b2942', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#d6deeb', toolbarText: '#5f7e97',
+    btnBorder: '#1d3b53', btnText: '#d6deeb', btnHoverBg: '#1d3b53', btnHoverBorder: '#82aaff',
+    boxBg: '#0b2942', boxBorder: '#1d3b53', boxHoverBorder: '#82aaff',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#d6deeb', boxEditBg: '#011627',
+    accent: '#82aaff', accentHover: '#c792ea', accentGlow: 'rgba(130,170,255,0.2)',
+    arrow: '#5f7e97', drawPreviewBg: 'rgba(130,170,255,0.08)',
+    hintBg: '#0b2942', hintText: '#5f7e97',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#0b2942', modalText: '#d6deeb', modalSub: '#5f7e97',
+    swatchBorder: '#1d3b53',
+    swatchBg: '#011627', swatchBox: '#82aaff', swatchBoxBorder: '#82aaff'
+  },
+  palenight: {
+    name: 'Palenight',
+    bg: '#292d3e', dot: '#343849',
+    toolbarBg: '#343849', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#a6accd', toolbarText: '#697098',
+    btnBorder: '#444760', btnText: '#a6accd', btnHoverBg: '#444760', btnHoverBorder: '#c792ea',
+    boxBg: '#343849', boxBorder: '#444760', boxHoverBorder: '#c792ea',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#a6accd', boxEditBg: '#292d3e',
+    accent: '#c792ea', accentHover: '#89ddff', accentGlow: 'rgba(199,146,234,0.2)',
+    arrow: '#697098', drawPreviewBg: 'rgba(199,146,234,0.08)',
+    hintBg: '#343849', hintText: '#697098',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#343849', modalText: '#a6accd', modalSub: '#697098',
+    swatchBorder: '#444760',
+    swatchBg: '#292d3e', swatchBox: '#c792ea', swatchBoxBorder: '#c792ea'
+  },
+  synthwave: {
+    name: 'Synthwave 84',
+    bg: '#262335', dot: '#2e2346',
+    toolbarBg: '#2e2346', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#ffffff', toolbarText: '#ff7edb',
+    btnBorder: '#463465', btnText: '#ffffff', btnHoverBg: '#463465', btnHoverBorder: '#ff7edb',
+    boxBg: '#2e2346', boxBorder: '#463465', boxHoverBorder: '#ff7edb',
+    boxHoverShadow: '0 4px 20px rgba(255,126,219,0.15)', boxText: '#ffffff', boxEditBg: '#262335',
+    accent: '#ff7edb', accentHover: '#36f9f6', accentGlow: 'rgba(255,126,219,0.2)',
+    arrow: '#614d85', drawPreviewBg: 'rgba(255,126,219,0.08)',
+    hintBg: '#2e2346', hintText: '#614d85',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#2e2346', modalText: '#ffffff', modalSub: '#ff7edb',
+    swatchBorder: '#463465',
+    swatchBg: '#262335', swatchBox: '#ff7edb', swatchBoxBorder: '#ff7edb'
+  },
+  cobalt2: {
+    name: 'Cobalt2',
+    bg: '#193549', dot: '#1f4662',
+    toolbarBg: '#1f4662', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#ffffff', toolbarText: '#ffc600',
+    btnBorder: '#2a5a7b', btnText: '#ffffff', btnHoverBg: '#2a5a7b', btnHoverBorder: '#ffc600',
+    boxBg: '#1f4662', boxBorder: '#2a5a7b', boxHoverBorder: '#ffc600',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#ffffff', boxEditBg: '#193549',
+    accent: '#ffc600', accentHover: '#fb94ff', accentGlow: 'rgba(255,198,0,0.2)',
+    arrow: '#3b7ea1', drawPreviewBg: 'rgba(255,198,0,0.08)',
+    hintBg: '#1f4662', hintText: '#3b7ea1',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#1f4662', modalText: '#ffffff', modalSub: '#ffc600',
+    swatchBorder: '#2a5a7b',
+    swatchBg: '#193549', swatchBox: '#ffc600', swatchBoxBorder: '#ffc600'
+  },
+  vitesse: {
+    name: 'Vitesse Dark',
+    bg: '#121212', dot: '#1e1e1e',
+    toolbarBg: '#1e1e1e', toolbarShadow: '0 2px 16px rgba(0,0,0,0.5)',
+    toolbarTitle: '#dbd7ca', toolbarText: '#6b7280',
+    btnBorder: '#2e2e2e', btnText: '#dbd7ca', btnHoverBg: '#2e2e2e', btnHoverBorder: '#4d9375',
+    boxBg: '#1e1e1e', boxBorder: '#2e2e2e', boxHoverBorder: '#4d9375',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.5)', boxText: '#dbd7ca', boxEditBg: '#121212',
+    accent: '#4d9375', accentHover: '#c98a7d', accentGlow: 'rgba(77,147,117,0.2)',
+    arrow: '#4a4a4a', drawPreviewBg: 'rgba(77,147,117,0.08)',
+    hintBg: '#1e1e1e', hintText: '#4a4a4a',
+    modalOverlay: 'rgba(0,0,0,0.6)', modalBg: '#1e1e1e', modalText: '#dbd7ca', modalSub: '#6b7280',
+    swatchBorder: '#2e2e2e',
+    swatchBg: '#121212', swatchBox: '#4d9375', swatchBoxBorder: '#4d9375'
+  },
+  poimandres: {
+    name: 'Poimandres',
+    bg: '#1b1e28', dot: '#252a37',
+    toolbarBg: '#252a37', toolbarShadow: '0 2px 16px rgba(0,0,0,0.4)',
+    toolbarTitle: '#e4f0fb', toolbarText: '#a6accd',
+    btnBorder: '#303340', btnText: '#e4f0fb', btnHoverBg: '#303340', btnHoverBorder: '#add7ff',
+    boxBg: '#252a37', boxBorder: '#303340', boxHoverBorder: '#add7ff',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.4)', boxText: '#e4f0fb', boxEditBg: '#1b1e28',
+    accent: '#add7ff', accentHover: '#f087bd', accentGlow: 'rgba(173,215,255,0.15)',
+    arrow: '#506477', drawPreviewBg: 'rgba(173,215,255,0.06)',
+    hintBg: '#252a37', hintText: '#506477',
+    modalOverlay: 'rgba(0,0,0,0.5)', modalBg: '#252a37', modalText: '#e4f0fb', modalSub: '#a6accd',
+    swatchBorder: '#303340',
+    swatchBg: '#1b1e28', swatchBox: '#add7ff', swatchBoxBorder: '#add7ff'
+  },
+  vesper: {
+    name: 'Vesper',
+    bg: '#101010', dot: '#1c1c1c',
+    toolbarBg: '#1c1c1c', toolbarShadow: '0 2px 16px rgba(0,0,0,0.5)',
+    toolbarTitle: '#b3b3b3', toolbarText: '#666666',
+    btnBorder: '#282828', btnText: '#b3b3b3', btnHoverBg: '#282828', btnHoverBorder: '#ffc799',
+    boxBg: '#1c1c1c', boxBorder: '#282828', boxHoverBorder: '#ffc799',
+    boxHoverShadow: '0 4px 20px rgba(0,0,0,0.5)', boxText: '#b3b3b3', boxEditBg: '#101010',
+    accent: '#ffc799', accentHover: '#ffb380', accentGlow: 'rgba(255,199,153,0.15)',
+    arrow: '#444444', drawPreviewBg: 'rgba(255,199,153,0.06)',
+    hintBg: '#1c1c1c', hintText: '#444444',
+    modalOverlay: 'rgba(0,0,0,0.6)', modalBg: '#1c1c1c', modalText: '#b3b3b3', modalSub: '#666666',
+    swatchBorder: '#282828',
+    swatchBg: '#101010', swatchBox: '#ffc799', swatchBoxBorder: '#ffc799'
+  },
+  solarizedLight: {
+    name: 'Solarized Light',
+    bg: '#fdf6e3', dot: '#eee8d5',
+    toolbarBg: '#eee8d5', toolbarShadow: '0 2px 12px rgba(0,0,0,0.06)',
+    toolbarTitle: '#586e75', toolbarText: '#93a1a1',
+    btnBorder: '#d6cdb5', btnText: '#586e75', btnHoverBg: '#e4dcc6', btnHoverBorder: '#268bd2',
+    boxBg: '#eee8d5', boxBorder: '#d6cdb5', boxHoverBorder: '#268bd2',
+    boxHoverShadow: '0 4px 16px rgba(0,0,0,0.06)', boxText: '#586e75', boxEditBg: '#fdf6e3',
+    accent: '#268bd2', accentHover: '#2aa198', accentGlow: 'rgba(38,139,210,0.12)',
+    arrow: '#93a1a1', drawPreviewBg: 'rgba(38,139,210,0.05)',
+    hintBg: '#eee8d5', hintText: '#93a1a1',
+    modalOverlay: 'rgba(0,0,0,0.3)', modalBg: '#eee8d5', modalText: '#586e75', modalSub: '#93a1a1',
+    swatchBorder: '#d6cdb5',
+    swatchBg: '#fdf6e3', swatchBox: '#268bd2', swatchBoxBorder: '#268bd2'
+  },
+  midnight: {
+    name: 'Midnight',
+    bg: '#0f0f1a', dot: '#171728',
+    toolbarBg: '#171728', toolbarShadow: '0 2px 16px rgba(0,0,0,0.5)',
+    toolbarTitle: '#e0e0fc', toolbarText: '#6e6ea8',
+    btnBorder: '#252547', btnText: '#e0e0fc', btnHoverBg: '#252547', btnHoverBorder: '#7c7cff',
+    boxBg: '#171728', boxBorder: '#252547', boxHoverBorder: '#7c7cff',
+    boxHoverShadow: '0 4px 20px rgba(124,124,255,0.1)', boxText: '#e0e0fc', boxEditBg: '#0f0f1a',
+    accent: '#7c7cff', accentHover: '#b48eff', accentGlow: 'rgba(124,124,255,0.2)',
+    arrow: '#3d3d6b', drawPreviewBg: 'rgba(124,124,255,0.06)',
+    hintBg: '#171728', hintText: '#3d3d6b',
+    modalOverlay: 'rgba(0,0,0,0.6)', modalBg: '#171728', modalText: '#e0e0fc', modalSub: '#6e6ea8',
+    swatchBorder: '#252547',
+    swatchBg: '#0f0f1a', swatchBox: '#7c7cff', swatchBoxBorder: '#7c7cff'
+  }
+};
+
+let currentTheme = 'light';
+
+function applyTheme(key) {
+  const t = THEMES[key];
+  if (!t) return;
+  currentTheme = key;
+  const r = document.documentElement.style;
+  r.setProperty('--bg', t.bg);
+  r.setProperty('--dot', t.dot);
+  r.setProperty('--toolbar-bg', t.toolbarBg);
+  r.setProperty('--toolbar-shadow', t.toolbarShadow);
+  r.setProperty('--toolbar-title', t.toolbarTitle);
+  r.setProperty('--toolbar-text', t.toolbarText);
+  r.setProperty('--btn-border', t.btnBorder);
+  r.setProperty('--btn-text', t.btnText);
+  r.setProperty('--btn-hover-bg', t.btnHoverBg);
+  r.setProperty('--btn-hover-border', t.btnHoverBorder);
+  r.setProperty('--box-bg', t.boxBg);
+  r.setProperty('--box-border', t.boxBorder);
+  r.setProperty('--box-hover-border', t.boxHoverBorder);
+  r.setProperty('--box-hover-shadow', t.boxHoverShadow);
+  r.setProperty('--box-text', t.boxText);
+  r.setProperty('--box-edit-bg', t.boxEditBg);
+  r.setProperty('--accent', t.accent);
+  r.setProperty('--accent-hover', t.accentHover);
+  r.setProperty('--accent-glow', t.accentGlow);
+  r.setProperty('--arrow', t.arrow);
+  r.setProperty('--draw-preview-bg', t.drawPreviewBg);
+  r.setProperty('--hint-bg', t.hintBg);
+  r.setProperty('--hint-text', t.hintText);
+  r.setProperty('--modal-overlay', t.modalOverlay);
+  r.setProperty('--modal-bg', t.modalBg);
+  r.setProperty('--modal-text', t.modalText);
+  r.setProperty('--modal-sub', t.modalSub);
+  r.setProperty('--swatch-border', t.swatchBorder);
+  document.querySelector('#arrowhead polygon').setAttribute('fill', t.arrow);
+  document.querySelectorAll('.theme-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.theme === key);
+  });
+  localStorage.setItem('whiteboard-theme', key);
+}
+
+function buildThemeGrid() {
+  const grid = document.getElementById('theme-grid');
+  grid.innerHTML = '';
+  Object.entries(THEMES).forEach(([key, t]) => {
+    const opt = document.createElement('div');
+    opt.className = 'theme-option' + (key === currentTheme ? ' active' : '');
+    opt.dataset.theme = key;
+    opt.innerHTML = `
+      <div class="theme-swatch" style="background:${t.swatchBg};">
+        <div class="theme-swatch-inner" style="background:${t.swatchBox};border-color:${t.swatchBoxBorder};"></div>
+      </div>
+      <span class="theme-label">${t.name}</span>
+    `;
+    opt.addEventListener('click', () => applyTheme(key));
+    grid.appendChild(opt);
+  });
+}
+
+function openThemeModal() {
+  buildThemeGrid();
+  document.getElementById('theme-overlay').style.display = 'block';
+  document.getElementById('theme-modal').style.display = 'block';
+}
+
+function closeThemeModal() {
+  document.getElementById('theme-overlay').style.display = 'none';
+  document.getElementById('theme-modal').style.display = 'none';
+}
+
+// ============== WHITEBOARD LOGIC ==============
+const svgArrows = document.getElementById('arrows');
+
+let boxes = [];
+let arrows = [];
+let nextId = 1;
+let selectedBoxId = null;
+
+let isDrawing = false;
+let drawStart = null; // in canvas coords
+let drawPreview = null;
+
+let isDragging = false;
+let dragBoxId = null;
+let dragOffset = { x: 0, y: 0 }; // in canvas coords
+
+const DEFAULT_W = 160;
+const DEFAULT_H = 80;
+const ARROW_GAP = 60;
+
+const arrowIcon = (rotation) => {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 24 24');
+  svg.innerHTML = `<path transform="rotate(${rotation},12,12)" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>`;
+  return svg;
+};
+
+function createBoxElement(box) {
+  const el = document.createElement('div');
+  el.className = 'box';
+  el.dataset.id = box.id;
+  el.style.left = box.x + 'px';
+  el.style.top = box.y + 'px';
+  el.style.width = box.w + 'px';
+  el.style.height = box.h + 'px';
+
+  const text = document.createElement('div');
+  text.className = 'box-text';
+  text.textContent = box.text;
+  el.appendChild(text);
+
+  ['top','right','bottom','left'].forEach(side => {
+    const handle = document.createElement('div');
+    handle.className = 'edge-handle ' + side;
+    const rot = { top: 270, right: 0, bottom: 90, left: 180 }[side];
+    handle.appendChild(arrowIcon(rot));
+    handle.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      spawnConnected(box.id, side);
+    });
+    handle.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      spawnConnected(box.id, side);
+    });
+    el.appendChild(handle);
+  });
+
+  el.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    text.contentEditable = 'true';
+    text.focus();
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  });
+
+  text.addEventListener('blur', () => {
+    text.contentEditable = 'false';
+    box.text = text.textContent || 'New Box';
+    if (!text.textContent.trim()) text.textContent = 'New Box';
+    save();
+  });
+
+  text.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); text.blur(); }
+  });
+
+  // Mouse drag
+  el.addEventListener('mousedown', (e) => {
+    if (text.contentEditable === 'true') return;
+    if (spaceHeld) return; // let pan take over
+    e.stopPropagation();
+    selectBox(box.id);
+    isDragging = true;
+    dragBoxId = box.id;
+    const cp = screenToCanvas(e.clientX, e.clientY);
+    dragOffset.x = cp.x - box.x;
+    dragOffset.y = cp.y - box.y;
+    el.classList.add('dragging');
+  });
+
+  // Touch drag
+  el.addEventListener('touchstart', (e) => {
+    if (text.contentEditable === 'true') return;
+    if (e.touches.length !== 1) return;
+    e.stopPropagation();
+    selectBox(box.id);
+    isDragging = true;
+    dragBoxId = box.id;
+    const t = e.touches[0];
+    const cp = screenToCanvas(t.clientX, t.clientY);
+    dragOffset.x = cp.x - box.x;
+    dragOffset.y = cp.y - box.y;
+    el.classList.add('dragging');
+  }, { passive: true });
+
+  canvas.appendChild(el);
+  return el;
+}
+
+function addBox(x, y, w, h, text) {
+  const box = { id: nextId++, x, y, w: Math.max(w, 100), h: Math.max(h, 50), text: text || 'New Box' };
+  boxes.push(box);
+  createBoxElement(box);
+  save();
+  return box;
+}
+
+function selectBox(id) {
+  selectedBoxId = id;
+  document.querySelectorAll('.box').forEach(el => {
+    el.classList.toggle('selected', parseInt(el.dataset.id) === id);
+  });
+}
+
+function deleteBox(id) {
+  const el = canvas.querySelector(`.box[data-id="${id}"]`);
+  if (el) el.remove();
+  boxes = boxes.filter(b => b.id !== id);
+  arrows = arrows.filter(a => a.from !== id && a.to !== id);
+  if (selectedBoxId === id) selectedBoxId = null;
+  renderArrows();
+  save();
+}
+
+function spawnConnected(fromId, side) {
+  const fromBox = boxes.find(b => b.id === fromId);
+  if (!fromBox) return;
+  let nx, ny;
+  const gap = ARROW_GAP;
+  switch (side) {
+    case 'top':    nx = fromBox.x; ny = fromBox.y - fromBox.h - gap; break;
+    case 'bottom': nx = fromBox.x; ny = fromBox.y + fromBox.h + gap; break;
+    case 'left':   nx = fromBox.x - fromBox.w - gap; ny = fromBox.y; break;
+    case 'right':  nx = fromBox.x + fromBox.w + gap; ny = fromBox.y; break;
+  }
+  const newBox = addBox(nx, ny, fromBox.w, fromBox.h, 'New Box');
+  arrows.push({ from: fromId, to: newBox.id, fromSide: side });
+  renderArrows();
+  save();
+}
+
+function getAnchor(box, side) {
+  switch (side) {
+    case 'top':    return { x: box.x + box.w / 2, y: box.y };
+    case 'bottom': return { x: box.x + box.w / 2, y: box.y + box.h };
+    case 'left':   return { x: box.x, y: box.y + box.h / 2 };
+    case 'right':  return { x: box.x + box.w, y: box.y + box.h / 2 };
+  }
+}
+
+function oppositeSide(side) {
+  return { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[side];
+}
+
+function renderArrows() {
+  svgArrows.querySelectorAll('line').forEach(l => l.remove());
+  arrows.forEach(a => {
+    const fromBox = boxes.find(b => b.id === a.from);
+    const toBox = boxes.find(b => b.id === a.to);
+    if (!fromBox || !toBox) return;
+    const start = getAnchor(fromBox, a.fromSide);
+    const end = getAnchor(toBox, oppositeSide(a.fromSide));
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', start.x);
+    line.setAttribute('y1', start.y);
+    line.setAttribute('x2', end.x);
+    line.setAttribute('y2', end.y);
+    svgArrows.appendChild(line);
+  });
+}
+
+// --- Viewport mouse events ---
+viewport.addEventListener('mousedown', (e) => {
+  // Middle mouse or space+click = pan
+  if (e.button === 1 || (e.button === 0 && spaceHeld)) {
+    e.preventDefault();
+    isPanning = true;
+    panStart = { x: e.clientX - panX, y: e.clientY - panY };
+    viewport.classList.add('panning-active');
+    return;
+  }
+
+  // Left click on empty canvas = draw box
+  if (e.button === 0 && e.target === viewport) {
+    selectBox(null);
+    isDrawing = true;
+    drawStart = screenToCanvas(e.clientX, e.clientY);
+    drawPreview = document.createElement('div');
+    drawPreview.className = 'draw-preview';
+    canvas.appendChild(drawPreview);
+  }
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (isPanning && panStart) {
+    panX = e.clientX - panStart.x;
+    panY = e.clientY - panStart.y;
+    updateTransform();
+    return;
+  }
+
+  if (isDrawing && drawStart) {
+    const cur = screenToCanvas(e.clientX, e.clientY);
+    const x = Math.min(cur.x, drawStart.x);
+    const y = Math.min(cur.y, drawStart.y);
+    const w = Math.abs(cur.x - drawStart.x);
+    const h = Math.abs(cur.y - drawStart.y);
+    drawPreview.style.left = x + 'px';
+    drawPreview.style.top = y + 'px';
+    drawPreview.style.width = w + 'px';
+    drawPreview.style.height = h + 'px';
+  }
+
+  if (isDragging && dragBoxId != null) {
+    const box = boxes.find(b => b.id === dragBoxId);
+    if (!box) return;
+    const cp = screenToCanvas(e.clientX, e.clientY);
+    box.x = cp.x - dragOffset.x;
+    box.y = cp.y - dragOffset.y;
+    const el = canvas.querySelector(`.box[data-id="${dragBoxId}"]`);
+    if (el) {
+      el.style.left = box.x + 'px';
+      el.style.top = box.y + 'px';
+    }
+    renderArrows();
+  }
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (isPanning) {
+    isPanning = false;
+    panStart = null;
+    viewport.classList.remove('panning-active');
+    if (!spaceHeld) viewport.classList.remove('panning');
+    return;
+  }
+
+  if (isDrawing && drawStart) {
+    const cur = screenToCanvas(e.clientX, e.clientY);
+    const x = Math.min(cur.x, drawStart.x);
+    const y = Math.min(cur.y, drawStart.y);
+    const w = Math.abs(cur.x - drawStart.x);
+    const h = Math.abs(cur.y - drawStart.y);
+    if (drawPreview) { drawPreview.remove(); drawPreview = null; }
+    if (w > 20 && h > 20) {
+      addBox(x, y, w, h, 'New Box');
+    } else if (w < 5 && h < 5) {
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      addBox(cp.x - DEFAULT_W / 2, cp.y - DEFAULT_H / 2, DEFAULT_W, DEFAULT_H, 'New Box');
+    }
+    isDrawing = false;
+    drawStart = null;
+  }
+
+  if (isDragging) {
+    isDragging = false;
+    const el = canvas.querySelector(`.box[data-id="${dragBoxId}"]`);
+    if (el) el.classList.remove('dragging');
+    dragBoxId = null;
+    save();
+  }
+});
+
+// --- Touch move/end for box dragging (single finger on a box) ---
+document.addEventListener('touchmove', (e) => {
+  if (isDragging && dragBoxId != null && e.touches.length === 1) {
+    const t = e.touches[0];
+    const box = boxes.find(b => b.id === dragBoxId);
+    if (!box) return;
+    const cp = screenToCanvas(t.clientX, t.clientY);
+    box.x = cp.x - dragOffset.x;
+    box.y = cp.y - dragOffset.y;
+    const el = canvas.querySelector(`.box[data-id="${dragBoxId}"]`);
+    if (el) {
+      el.style.left = box.x + 'px';
+      el.style.top = box.y + 'px';
+    }
+    renderArrows();
+  }
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+  if (isDragging) {
+    isDragging = false;
+    const el = canvas.querySelector(`.box[data-id="${dragBoxId}"]`);
+    if (el) el.classList.remove('dragging');
+    dragBoxId = null;
+    save();
+  }
+});
+
+// --- Persistence ---
+function save() {
+  const data = { boxes, arrows, nextId };
+  localStorage.setItem('whiteboard-data', JSON.stringify(data));
+}
+
+function load() {
+  const raw = localStorage.getItem('whiteboard-data');
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    boxes = data.boxes || [];
+    arrows = data.arrows || [];
+    nextId = data.nextId || 1;
+    boxes.forEach(b => createBoxElement(b));
+    renderArrows();
+  } catch(e) { console.error('Failed to load:', e); }
+}
+
+function clearAll() {
+  document.getElementById('confirm-overlay').style.display = 'block';
+  document.getElementById('confirm-modal').style.display = 'block';
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').style.display = 'none';
+  document.getElementById('confirm-modal').style.display = 'none';
+}
+
+function confirmClear() {
+  canvas.querySelectorAll('.box').forEach(el => el.remove());
+  svgArrows.querySelectorAll('line').forEach(l => l.remove());
+  boxes = [];
+  arrows = [];
+  selectedBoxId = null;
+  save();
+  closeConfirm();
+}
+
+function exportJSON() {
+  const data = JSON.stringify({ boxes, arrows, nextId }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'whiteboard.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        canvas.querySelectorAll('.box').forEach(el => el.remove());
+        svgArrows.querySelectorAll('line').forEach(l => l.remove());
+        const data = JSON.parse(ev.target.result);
+        boxes = data.boxes || [];
+        arrows = data.arrows || [];
+        nextId = data.nextId || 1;
+        boxes.forEach(b => createBoxElement(b));
+        renderArrows();
+        save();
+      } catch(err) { alert('Invalid file'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// --- Init ---
+const savedTheme = localStorage.getItem('whiteboard-theme') || 'light';
+applyTheme(savedTheme);
+load();
+updateTransform();
+</script>
+</body>
+</html>
