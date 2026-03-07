@@ -156,7 +156,37 @@
     stroke: var(--arrow);
     stroke-width: 2;
     marker-end: url(#arrowhead);
-    transition: stroke 0.3s;
+    transition: stroke 0.15s;
+  }
+
+  svg#arrows line.arrow-clickable {
+    stroke: transparent;
+    stroke-width: 16;
+    marker-end: none;
+    pointer-events: stroke;
+    cursor: pointer;
+  }
+
+  @keyframes marchingAnts {
+    to { stroke-dashoffset: -10; }
+  }
+
+  svg#arrows line.arrow-selected {
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 5 3;
+    animation: marchingAnts 0.35s linear infinite;
+  }
+
+  svg#arrows circle.arrow-endpoint {
+    fill: var(--accent);
+    pointer-events: all;
+    cursor: grab;
+    transition: r 0.1s;
+  }
+
+  svg#arrows circle.arrow-endpoint:hover {
+    r: 7;
   }
 
   .box {
@@ -181,8 +211,30 @@
   }
 
   .box.selected {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow), var(--box-hover-shadow);
+    border-color: transparent;
+    box-shadow: var(--box-hover-shadow);
+  }
+
+  .box .marching-svg {
+    display: none;
+    position: absolute;
+    inset: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  .box .marching-svg rect {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 5 3;
+    animation: marchingAnts 0.35s linear infinite;
+  }
+
+  .box.selected .marching-svg {
+    display: block;
   }
 
   .box.dragging { cursor: grabbing; }
@@ -212,10 +264,7 @@
     position: absolute;
     background: var(--accent);
     border-radius: 50%;
-    width: 20px; height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 12px; height: 12px;
     opacity: 0;
     transition: opacity 0.15s, transform 0.15s;
     cursor: pointer;
@@ -223,21 +272,33 @@
     pointer-events: none;
   }
 
-  .edge-handle svg { width: 12px; height: 12px; fill: #fff; }
-
   .box:hover .edge-handle { opacity: 1; pointer-events: auto; }
 
-  .edge-handle:hover { transform: scale(1.2); background: var(--accent-hover); }
+  .edge-handle:hover { transform: scale(1.4); background: var(--accent-hover); }
 
-  .edge-handle.top    { top: -10px;   left: 50%;  transform: translateX(-50%); }
-  .edge-handle.bottom { bottom: -10px;left: 50%;  transform: translateX(-50%); }
-  .edge-handle.left   { left: -10px;  top: 50%;   transform: translateY(-50%); }
-  .edge-handle.right  { right: -10px; top: 50%;   transform: translateY(-50%); }
+  /* Top handles */
+  .edge-handle.top-0 { top: -6px; left: 25%;  transform: translateX(-50%); }
+  .edge-handle.top-1 { top: -6px; left: 50%;  transform: translateX(-50%); }
+  .edge-handle.top-2 { top: -6px; left: 75%;  transform: translateX(-50%); }
+  /* Bottom handles */
+  .edge-handle.bottom-0 { bottom: -6px; left: 25%;  transform: translateX(-50%); }
+  .edge-handle.bottom-1 { bottom: -6px; left: 50%;  transform: translateX(-50%); }
+  .edge-handle.bottom-2 { bottom: -6px; left: 75%;  transform: translateX(-50%); }
+  /* Left handles */
+  .edge-handle.left-0 { left: -6px; top: 25%;  transform: translateY(-50%); }
+  .edge-handle.left-1 { left: -6px; top: 50%;  transform: translateY(-50%); }
+  .edge-handle.left-2 { left: -6px; top: 75%;  transform: translateY(-50%); }
+  /* Right handles */
+  .edge-handle.right-0 { right: -6px; top: 25%;  transform: translateY(-50%); }
+  .edge-handle.right-1 { right: -6px; top: 50%;  transform: translateY(-50%); }
+  .edge-handle.right-2 { right: -6px; top: 75%;  transform: translateY(-50%); }
 
-  .box:hover .edge-handle.top:hover    { transform: translateX(-50%) scale(1.2); }
-  .box:hover .edge-handle.bottom:hover { transform: translateX(-50%) scale(1.2); }
-  .box:hover .edge-handle.left:hover   { transform: translateY(-50%) scale(1.2); }
-  .box:hover .edge-handle.right:hover  { transform: translateY(-50%) scale(1.2); }
+  .box:hover .edge-handle:hover { transform: scale(1.4); }
+
+  .box.drop-target {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-glow), var(--box-hover-shadow) !important;
+  }
 
   .draw-preview {
     position: absolute;
@@ -679,6 +740,14 @@ document.addEventListener('keydown', (e) => {
     viewport.classList.add('panning');
   }
   if (e.target.contentEditable === 'true') return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedArrowIdx !== null) {
+    e.preventDefault();
+    arrows.splice(selectedArrowIdx, 1);
+    selectedArrowIdx = null;
+    renderArrows();
+    save();
+    return;
+  }
   if ((e.key === 'Delete' || e.key === 'Backspace') && selectedBoxId != null) {
     e.preventDefault();
     deleteBox(selectedBoxId);
@@ -1219,16 +1288,20 @@ let isDragging = false;
 let dragBoxId = null;
 let dragOffset = { x: 0, y: 0 }; // in canvas coords
 
+let selectedArrowIdx = null;
+
+// Arrow dragging state (new arrow from handle or reconnecting existing)
+let isArrowDragging = false;
+let arrowFromId = null;
+let arrowFromSide = null;
+let arrowPreviewLine = null;
+let arrowDropTarget = null;
+let arrowReconnecting = null; // { idx, end: 'from'|'to' }
+
 const DEFAULT_W = 160;
 const DEFAULT_H = 80;
 const ARROW_GAP = 60;
 
-const arrowIcon = (rotation) => {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.setAttribute('viewBox','0 0 24 24');
-  svg.innerHTML = `<path transform="rotate(${rotation},12,12)" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>`;
-  return svg;
-};
 
 function createBoxElement(box) {
   const el = document.createElement('div');
@@ -1239,26 +1312,51 @@ function createBoxElement(box) {
   el.style.width = box.w + 'px';
   el.style.height = box.h + 'px';
 
+  // Marching ants SVG overlay
+  const marchSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  marchSvg.classList.add('marching-svg');
+  marchSvg.setAttribute('preserveAspectRatio', 'none');
+  const marchRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  marchRect.setAttribute('x', '2');
+  marchRect.setAttribute('y', '2');
+  marchRect.setAttribute('rx', '14');
+  marchRect.setAttribute('ry', '14');
+  marchSvg.appendChild(marchRect);
+  el.appendChild(marchSvg);
+
+  // Size the rect to match the SVG (updated on layout)
+  const updateMarch = () => {
+    const w = el.offsetWidth + 8;
+    const h = el.offsetHeight + 8;
+    marchSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    marchRect.setAttribute('width', w - 4);
+    marchRect.setAttribute('height', h - 4);
+  };
+  el._updateMarch = updateMarch;
+  requestAnimationFrame(updateMarch);
+
   const text = document.createElement('div');
   text.className = 'box-text';
   text.textContent = box.text;
   el.appendChild(text);
 
   ['top','right','bottom','left'].forEach(side => {
-    const handle = document.createElement('div');
-    handle.className = 'edge-handle ' + side;
-    const rot = { top: 270, right: 0, bottom: 90, left: 180 }[side];
-    handle.appendChild(arrowIcon(rot));
-    handle.addEventListener('mousedown', (e) => {
-      e.stopPropagation();
-      spawnConnected(box.id, side);
-    });
-    handle.addEventListener('touchstart', (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      spawnConnected(box.id, side);
-    });
-    el.appendChild(handle);
+    for (let slot = 0; slot < 3; slot++) {
+      const handle = document.createElement('div');
+      handle.className = `edge-handle ${side}-${slot}`;
+      const sideSlot = `${side}-${slot}`;
+      handle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        startArrowDrag(box.id, sideSlot, e.clientX, e.clientY);
+      });
+      handle.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const t = e.touches[0];
+        startArrowDrag(box.id, sideSlot, t.clientX, t.clientY);
+      });
+      el.appendChild(handle);
+    }
   });
 
   el.addEventListener('dblclick', (e) => {
@@ -1325,8 +1423,11 @@ function addBox(x, y, w, h, text) {
 
 function selectBox(id) {
   selectedBoxId = id;
+  deselectArrow();
   document.querySelectorAll('.box').forEach(el => {
-    el.classList.toggle('selected', parseInt(el.dataset.id) === id);
+    const isSelected = parseInt(el.dataset.id) === id;
+    el.classList.toggle('selected', isSelected);
+    if (isSelected && el._updateMarch) requestAnimationFrame(el._updateMarch);
   });
 }
 
@@ -1340,51 +1441,294 @@ function deleteBox(id) {
   save();
 }
 
-function spawnConnected(fromId, side) {
+// --- Arrow drag-to-connect ---
+function startArrowDrag(fromId, side, sx, sy) {
+  isArrowDragging = true;
+  arrowFromId = fromId;
+  arrowFromSide = side;
+  arrowDropTarget = null;
+
+  // Create preview line in SVG
+  arrowPreviewLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  arrowPreviewLine.setAttribute('stroke-dasharray', '6,4');
+  arrowPreviewLine.setAttribute('opacity', '0.6');
   const fromBox = boxes.find(b => b.id === fromId);
-  if (!fromBox) return;
-  let nx, ny;
-  const gap = ARROW_GAP;
-  switch (side) {
-    case 'top':    nx = fromBox.x; ny = fromBox.y - fromBox.h - gap; break;
-    case 'bottom': nx = fromBox.x; ny = fromBox.y + fromBox.h + gap; break;
-    case 'left':   nx = fromBox.x - fromBox.w - gap; ny = fromBox.y; break;
-    case 'right':  nx = fromBox.x + fromBox.w + gap; ny = fromBox.y; break;
+  const anchor = getAnchor(fromBox, side);
+  const cp = screenToCanvas(sx, sy);
+  arrowPreviewLine.setAttribute('x1', anchor.x);
+  arrowPreviewLine.setAttribute('y1', anchor.y);
+  arrowPreviewLine.setAttribute('x2', cp.x);
+  arrowPreviewLine.setAttribute('y2', cp.y);
+  svgArrows.appendChild(arrowPreviewLine);
+}
+
+function updateArrowDrag(sx, sy) {
+  if (!isArrowDragging || !arrowPreviewLine) return;
+  const cp = screenToCanvas(sx, sy);
+  arrowPreviewLine.setAttribute('x2', cp.x);
+  arrowPreviewLine.setAttribute('y2', cp.y);
+
+  // Highlight drop target
+  const hit = findBoxAt(cp.x, cp.y);
+  if (hit && hit.id !== arrowFromId) {
+    if (arrowDropTarget !== hit.id) {
+      clearDropHighlight();
+      arrowDropTarget = hit.id;
+      const el = canvas.querySelector(`.box[data-id="${hit.id}"]`);
+      if (el) el.classList.add('drop-target');
+    }
+  } else {
+    clearDropHighlight();
+    arrowDropTarget = null;
   }
-  const newBox = addBox(nx, ny, fromBox.w, fromBox.h, 'New Box');
-  arrows.push({ from: fromId, to: newBox.id, fromSide: side });
+}
+
+function endArrowDrag(sx, sy) {
+  if (!isArrowDragging) return;
+
+  // If reconnecting an existing arrow endpoint
+  if (arrowReconnecting) {
+    endArrowReconnect(sx, sy);
+    return;
+  }
+
+  isArrowDragging = false;
+  if (arrowPreviewLine) { arrowPreviewLine.remove(); arrowPreviewLine = null; }
+  clearDropHighlight();
+
+  const fromBox = boxes.find(b => b.id === arrowFromId);
+  if (!fromBox) return;
+
+  const cp = screenToCanvas(sx, sy);
+  const hit = findBoxAt(cp.x, cp.y);
+
+  if (hit && hit.id !== arrowFromId) {
+    // Connect to existing box
+    const toSide = closestSide(hit, cp.x, cp.y);
+    arrows.push({ from: arrowFromId, to: hit.id, fromSide: arrowFromSide, toSide: toSide });
+  } else {
+    // Spawn new box in the direction of the drag
+    const dir = arrowFromSide.split('-')[0];
+    let nx, ny;
+    const gap = ARROW_GAP;
+    switch (dir) {
+      case 'top':    nx = fromBox.x; ny = fromBox.y - fromBox.h - gap; break;
+      case 'bottom': nx = fromBox.x; ny = fromBox.y + fromBox.h + gap; break;
+      case 'left':   nx = fromBox.x - fromBox.w - gap; ny = fromBox.y; break;
+      case 'right':  nx = fromBox.x + fromBox.w + gap; ny = fromBox.y; break;
+    }
+    const newBox = addBox(nx, ny, fromBox.w, fromBox.h, 'New Box');
+    arrows.push({ from: arrowFromId, to: newBox.id, fromSide: arrowFromSide });
+  }
+  renderArrows();
+  save();
+  arrowFromId = null;
+  arrowFromSide = null;
+  arrowDropTarget = null;
+}
+
+function findBoxAt(cx, cy) {
+  for (const b of boxes) {
+    if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) return b;
+  }
+  return null;
+}
+
+function closestSide(box, cx, cy) {
+  // Find closest side
+  const dists = {
+    top: cy - box.y,
+    bottom: (box.y + box.h) - cy,
+    left: cx - box.x,
+    right: (box.x + box.w) - cx
+  };
+  let minDir = 'top', minDist = Infinity;
+  for (const [d, v] of Object.entries(dists)) {
+    if (Math.abs(v) < minDist) { minDist = Math.abs(v); minDir = d; }
+  }
+  // Find closest slot on that side
+  let bestSlot = 1, bestDist = Infinity;
+  for (let s = 0; s < 3; s++) {
+    const a = getAnchor(box, `${minDir}-${s}`);
+    const d = Math.hypot(cx - a.x, cy - a.y);
+    if (d < bestDist) { bestDist = d; bestSlot = s; }
+  }
+  return `${minDir}-${bestSlot}`;
+}
+
+function clearDropHighlight() {
+  canvas.querySelectorAll('.box.drop-target').forEach(el => el.classList.remove('drop-target'));
+}
+
+// --- Reconnect existing arrow endpoint ---
+function startArrowReconnect(idx, end, sx, sy) {
+  const a = arrows[idx];
+  if (!a) return;
+  arrowReconnecting = { idx, end };
+  isArrowDragging = true;
+  arrowDropTarget = null;
+
+  // The fixed end is the opposite side
+  let fixedBox, fixedSide;
+  if (end === 'from') {
+    fixedBox = boxes.find(b => b.id === a.to);
+    fixedSide = a.toSide || oppositeSide(a.fromSide);
+    arrowFromId = a.to; // use as reference to exclude from drop
+  } else {
+    fixedBox = boxes.find(b => b.id === a.from);
+    fixedSide = a.fromSide;
+    arrowFromId = a.from;
+  }
+
+  const anchor = getAnchor(fixedBox, fixedSide);
+  const cp = screenToCanvas(sx, sy);
+
+  arrowPreviewLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  arrowPreviewLine.setAttribute('stroke-dasharray', '6,4');
+  arrowPreviewLine.setAttribute('opacity', '0.6');
+  // Fixed end at x1,y1 — dragging end at x2,y2
+  arrowPreviewLine.setAttribute('x1', anchor.x);
+  arrowPreviewLine.setAttribute('y1', anchor.y);
+  arrowPreviewLine.setAttribute('x2', cp.x);
+  arrowPreviewLine.setAttribute('y2', cp.y);
+  svgArrows.appendChild(arrowPreviewLine);
+
+  // Hide the original arrow while reconnecting
+  renderArrows();
+}
+
+function endArrowReconnect(sx, sy) {
+  const rc = arrowReconnecting;
+  if (!rc) return;
+  const a = arrows[rc.idx];
+  if (!a) { arrowReconnecting = null; return; }
+
+  const cp = screenToCanvas(sx, sy);
+  const hit = findBoxAt(cp.x, cp.y);
+
+  if (hit && hit.id !== arrowFromId) {
+    const hitSide = closestSide(hit, cp.x, cp.y);
+    if (rc.end === 'from') {
+      a.from = hit.id;
+      a.fromSide = hitSide;
+    } else {
+      a.to = hit.id;
+      a.toSide = hitSide;
+    }
+  }
+  // If dropped on empty space or same box, keep original
+
+  arrowReconnecting = null;
+  isArrowDragging = false;
+  arrowFromId = null;
+  if (arrowPreviewLine) { arrowPreviewLine.remove(); arrowPreviewLine = null; }
+  clearDropHighlight();
   renderArrows();
   save();
 }
 
 function getAnchor(box, side) {
-  switch (side) {
-    case 'top':    return { x: box.x + box.w / 2, y: box.y };
-    case 'bottom': return { x: box.x + box.w / 2, y: box.y + box.h };
-    case 'left':   return { x: box.x, y: box.y + box.h / 2 };
-    case 'right':  return { x: box.x + box.w, y: box.y + box.h / 2 };
+  // Parse side-slot format: "top-1" or legacy "top"
+  const parts = side.split('-');
+  const dir = parts[0];
+  const slot = parts.length > 1 ? parseInt(parts[1]) : 1; // default to middle
+  const pcts = [0.25, 0.5, 0.75];
+  const pct = pcts[slot] || 0.5;
+
+  switch (dir) {
+    case 'top':    return { x: box.x + box.w * pct, y: box.y };
+    case 'bottom': return { x: box.x + box.w * pct, y: box.y + box.h };
+    case 'left':   return { x: box.x, y: box.y + box.h * pct };
+    case 'right':  return { x: box.x + box.w, y: box.y + box.h * pct };
   }
 }
 
 function oppositeSide(side) {
-  return { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[side];
+  const dir = side.split('-')[0];
+  const slot = side.includes('-') ? side.split('-')[1] : '1';
+  const opp = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[dir];
+  return `${opp}-${slot}`;
 }
 
 function renderArrows() {
-  svgArrows.querySelectorAll('line').forEach(l => l.remove());
-  arrows.forEach(a => {
+  // Remove all rendered arrow elements (not the preview dashed line)
+  svgArrows.querySelectorAll('line:not([stroke-dasharray]), circle.arrow-endpoint').forEach(l => l.remove());
+  arrows.forEach((a, idx) => {
     const fromBox = boxes.find(b => b.id === a.from);
     const toBox = boxes.find(b => b.id === a.to);
     if (!fromBox || !toBox) return;
     const start = getAnchor(fromBox, a.fromSide);
-    const end = getAnchor(toBox, oppositeSide(a.fromSide));
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', start.x);
-    line.setAttribute('y1', start.y);
-    line.setAttribute('x2', end.x);
-    line.setAttribute('y2', end.y);
-    svgArrows.appendChild(line);
+    const endSide = a.toSide || oppositeSide(a.fromSide);
+    const end = getAnchor(toBox, endSide);
+
+    // Hide arrow being reconnected
+    const isReconnecting = arrowReconnecting && arrowReconnecting.idx === idx;
+
+    // Visible line
+    if (!isReconnecting) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', start.x);
+      line.setAttribute('y1', start.y);
+      line.setAttribute('x2', end.x);
+      line.setAttribute('y2', end.y);
+      if (selectedArrowIdx === idx) line.classList.add('arrow-selected');
+      svgArrows.appendChild(line);
+    }
+
+    // Invisible fat hit area for clicking
+    if (isReconnecting) return;
+    const hitLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    hitLine.setAttribute('x1', start.x);
+    hitLine.setAttribute('y1', start.y);
+    hitLine.setAttribute('x2', end.x);
+    hitLine.setAttribute('y2', end.y);
+    hitLine.classList.add('arrow-clickable');
+    hitLine.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      selectArrow(idx);
+    });
+    hitLine.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      selectArrow(idx);
+    });
+    svgArrows.appendChild(hitLine);
+
+    // Draggable endpoint circles on selected arrow
+    if (selectedArrowIdx === idx) {
+      [['from', start], ['to', end]].forEach(([end, pt]) => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', pt.x);
+        circle.setAttribute('cy', pt.y);
+        circle.setAttribute('r', '5');
+        circle.classList.add('arrow-endpoint');
+        circle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          startArrowReconnect(idx, end, e.clientX, e.clientY);
+        });
+        circle.addEventListener('touchstart', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const t = e.touches[0];
+          startArrowReconnect(idx, end, t.clientX, t.clientY);
+        });
+        svgArrows.appendChild(circle);
+      });
+    }
   });
+}
+
+function selectArrow(idx) {
+  selectedArrowIdx = idx;
+  selectedBoxId = null;
+  document.querySelectorAll('.box').forEach(el => el.classList.remove('selected'));
+  renderArrows();
+}
+
+function deselectArrow() {
+  if (selectedArrowIdx !== null) {
+    selectedArrowIdx = null;
+    renderArrows();
+  }
 }
 
 // --- Viewport mouse events ---
@@ -1401,6 +1745,7 @@ viewport.addEventListener('mousedown', (e) => {
   // Left click on empty canvas = draw box
   if (e.button === 0 && e.target === viewport) {
     selectBox(null);
+    deselectArrow();
     isDrawing = true;
     drawStart = screenToCanvas(e.clientX, e.clientY);
     drawPreview = document.createElement('div');
@@ -1414,6 +1759,11 @@ document.addEventListener('mousemove', (e) => {
     panX = e.clientX - panStart.x;
     panY = e.clientY - panStart.y;
     updateTransform();
+    return;
+  }
+
+  if (isArrowDragging) {
+    updateArrowDrag(e.clientX, e.clientY);
     return;
   }
 
@@ -1453,6 +1803,11 @@ document.addEventListener('mouseup', (e) => {
     return;
   }
 
+  if (isArrowDragging) {
+    endArrowDrag(e.clientX, e.clientY);
+    return;
+  }
+
   if (isDrawing && drawStart) {
     const cur = screenToCanvas(e.clientX, e.clientY);
     const x = Math.min(cur.x, drawStart.x);
@@ -1479,8 +1834,13 @@ document.addEventListener('mouseup', (e) => {
   }
 });
 
-// --- Touch move/end for box dragging (single finger on a box) ---
+// --- Touch move/end for box dragging and arrow dragging ---
 document.addEventListener('touchmove', (e) => {
+  if (isArrowDragging && e.touches.length === 1) {
+    const t = e.touches[0];
+    updateArrowDrag(t.clientX, t.clientY);
+    return;
+  }
   if (isDragging && dragBoxId != null && e.touches.length === 1) {
     const t = e.touches[0];
     const box = boxes.find(b => b.id === dragBoxId);
@@ -1498,6 +1858,11 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: true });
 
 document.addEventListener('touchend', (e) => {
+  if (isArrowDragging) {
+    const t = e.changedTouches[0];
+    endArrowDrag(t.clientX, t.clientY);
+    return;
+  }
   if (isDragging) {
     isDragging = false;
     const el = canvas.querySelector(`.box[data-id="${dragBoxId}"]`);
