@@ -88,9 +88,14 @@
     font-family: var(--font);
   }
 
-  #toolbar button:hover {
+  #toolbar button:hover:not(:disabled) {
     background: var(--btn-hover-bg);
     border-color: var(--btn-hover-border);
+  }
+
+  #toolbar button:disabled {
+    opacity: 0.35;
+    cursor: default;
   }
 
   .icon-btn {
@@ -599,6 +604,13 @@
 <div id="toolbar">
   <span class="title">Whiteboard</span>
   <span class="sep">|</span>
+  <button id="undo-btn" class="icon-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled>
+    <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.73L3 8v9h9l-2.83-2.83A7.004 7.004 0 0119 12c0-.35-.02-.7-.07-1.04l1.98-.35A8.97 8.97 0 0112.5 8z"/></svg>
+  </button>
+  <button id="redo-btn" class="icon-btn" onclick="redo()" title="Redo (Ctrl+Shift+Z)" disabled>
+    <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16a8.002 8.002 0 017.6-5.5c1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
+  </button>
+  <span class="sep">|</span>
   <button onclick="clearAll()">Clear All</button>
   <button onclick="exportJSON()">Save</button>
   <button onclick="importJSON()">Load</button>
@@ -777,6 +789,16 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     spaceHeld = true;
     viewport.classList.add('panning');
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    undo();
+    return;
+  }
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey) || e.key === 'y')) {
+    e.preventDefault();
+    redo();
+    return;
   }
   if (e.target.contentEditable === 'true') return;
   if ((e.key === 'Delete' || e.key === 'Backspace') && selectedArrowIdx !== null) {
@@ -1318,6 +1340,10 @@ let boxes = [];
 let arrows = [];
 let nextId = 1;
 let selectedBoxId = null;
+
+const undoStack = [];
+const redoStack = [];
+const MAX_HISTORY = 50;
 
 let isDrawing = false;
 let drawStart = null; // in canvas coords
@@ -1924,9 +1950,53 @@ document.addEventListener('touchend', (e) => {
 });
 
 // --- Persistence ---
+function getSnapshot() {
+  return JSON.stringify({ boxes, arrows, nextId });
+}
+
+function pushUndo() {
+  undoStack.push(getSnapshot());
+  if (undoStack.length > MAX_HISTORY) undoStack.shift();
+  redoStack.length = 0;
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+  document.getElementById('undo-btn').disabled = undoStack.length === 0;
+  document.getElementById('redo-btn').disabled = redoStack.length === 0;
+}
+
+function restoreSnapshot(snapshot) {
+  const data = JSON.parse(snapshot);
+  canvas.querySelectorAll('.box').forEach(el => el.remove());
+  svgArrows.innerHTML = '';
+  boxes = data.boxes || [];
+  arrows = data.arrows || [];
+  nextId = data.nextId || 1;
+  selectedBoxId = null;
+  selectedArrowIdx = null;
+  boxes.forEach(b => createBoxElement(b));
+  renderArrows();
+  localStorage.setItem('whiteboard-data', snapshot);
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  redoStack.push(getSnapshot());
+  restoreSnapshot(undoStack.pop());
+  updateUndoRedoButtons();
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  undoStack.push(getSnapshot());
+  restoreSnapshot(redoStack.pop());
+  updateUndoRedoButtons();
+}
+
 function save() {
-  const data = { boxes, arrows, nextId };
-  localStorage.setItem('whiteboard-data', JSON.stringify(data));
+  pushUndo();
+  localStorage.setItem('whiteboard-data', getSnapshot());
 }
 
 function load() {
