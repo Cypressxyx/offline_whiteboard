@@ -203,7 +203,7 @@
   svg#arrows {
     position: absolute;
     top: 0; left: 0;
-    width: 1px; height: 1px;
+    width: 100%; height: 100%;
     overflow: visible;
     pointer-events: none;
     z-index: 1;
@@ -713,7 +713,7 @@
   <div id="canvas">
     <svg id="arrows">
       <defs>
-        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
           <polygon points="0 0, 10 3.5, 0 7" fill="var(--arrow)"/>
         </marker>
       </defs>
@@ -1688,9 +1688,17 @@ function endArrowDrag(sx, sy) {
     const toSide = closestSide(hit, cp.x, cp.y);
     arrows.push({ from: arrowFromId, to: hit.id, fromSide: arrowFromSide, toSide: toSide });
   } else {
-    // Spawn new box where the cursor is
-    const nx = cp.x - fromBox.w / 2;
-    const ny = cp.y - fromBox.h / 2;
+    // Spawn new box at cursor, offset so the connecting edge aligns with cursor
+    const fromDir = arrowFromSide.split('-')[0];
+    let nx = cp.x - fromBox.w / 2;
+    let ny = cp.y - fromBox.h / 2;
+    if (fromDir === 'bottom' || fromDir === 'top') {
+      // Arrow exits vertically — place box so its nearest horizontal edge is at cursor
+      ny = fromDir === 'bottom' ? cp.y : cp.y - fromBox.h;
+    } else {
+      // Arrow exits horizontally — place box so its nearest vertical edge is at cursor
+      nx = fromDir === 'right' ? cp.x : cp.x - fromBox.w;
+    }
     const newBox = addBox(nx, ny, fromBox.w, fromBox.h, 'New Box');
     const toSide = closestSide(newBox, cp.x, cp.y);
     arrows.push({ from: arrowFromId, to: newBox.id, fromSide: arrowFromSide, toSide: toSide });
