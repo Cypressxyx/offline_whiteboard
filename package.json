@@ -10,8 +10,8 @@
     "format": "prettier --write \"*.{html,js}\" \"tests/**/*.js\"",
     "test": "jest",
     "test:update": "jest --updateSnapshot",
-    "build": "node build.js",
-    "validate": "npm run format:check && npm run lint && npm run test && npm run build"
+    "build": "npm run validate",
+    "validate": "npm run format:check && npm run lint && npm run test && node build.js"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
