@@ -698,6 +698,91 @@ describe('save and load', () => {
   });
 });
 
+// ============== Save menu ==============
+describe('save menu', () => {
+  let wb, doc;
+  beforeEach(() => ({ wb, doc } = loadApp()));
+
+  test('save button opens save menu dropdown', () => {
+    const menu = doc.getElementById('save-menu');
+    expect(menu.style.display).toBe('none');
+    wb.toggleSaveMenu();
+    expect(menu.style.display).toBe('block');
+  });
+
+  test('closeSaveMenu hides the menu', () => {
+    wb.toggleSaveMenu();
+    expect(doc.getElementById('save-menu').style.display).toBe('block');
+    wb.closeSaveMenu();
+    expect(doc.getElementById('save-menu').style.display).toBe('none');
+  });
+
+  test('save menu has three options', () => {
+    const buttons = doc.querySelectorAll('#save-menu button');
+    expect(buttons.length).toBe(3);
+    expect(buttons[0].textContent.trim()).toBe('Export JSON');
+    expect(buttons[1].textContent.trim()).toBe('Export SVG');
+    expect(buttons[2].textContent.trim()).toBe('Copy Share Link');
+  });
+
+  test('save menu snapshot', () => {
+    expect(doc.getElementById('save-menu').innerHTML).toMatchSnapshot();
+  });
+});
+
+// ============== URL state sharing ==============
+describe('URL state sharing', () => {
+  test('loads state from URL hash', () => {
+    const state = {
+      boxes: [{ id: 1, x: 50, y: 50, w: 200, h: 100, text: 'Shared Box' }],
+      arrows: [],
+      nextId: 2,
+      freeTexts: [],
+    };
+    const encoded = encodeState(state);
+    const dom = new JSDOM(inlinedHTML, {
+      runScripts: 'dangerously',
+      pretendToBeVisual: true,
+      url: 'http://localhost/#state=' + encoded,
+    });
+    const wb = dom.window._wb;
+    expect(wb.boxes.length).toBe(1);
+    expect(wb.boxes[0].text).toBe('Shared Box');
+    expect(dom.window.document.querySelectorAll('.box').length).toBe(1);
+  });
+
+  test('URL state with boxes and arrows restores correctly', () => {
+    const state = {
+      boxes: [
+        { id: 1, x: 0, y: 0, w: 200, h: 100, text: 'A' },
+        { id: 2, x: 400, y: 0, w: 200, h: 100, text: 'B' },
+      ],
+      arrows: [{ from: 1, to: 2, fromSide: 'right-1', toSide: 'left-1' }],
+      nextId: 3,
+      freeTexts: [],
+    };
+    const encoded = encodeState(state);
+    const dom = new JSDOM(inlinedHTML, {
+      runScripts: 'dangerously',
+      pretendToBeVisual: true,
+      url: 'http://localhost/#state=' + encoded,
+    });
+    const wb = dom.window._wb;
+    expect(wb.boxes.length).toBe(2);
+    expect(wb.arrows.length).toBe(1);
+  });
+
+  test('invalid URL hash falls back to normal load', () => {
+    const dom = new JSDOM(inlinedHTML, {
+      runScripts: 'dangerously',
+      pretendToBeVisual: true,
+      url: 'http://localhost/#state=INVALIDDATA!!!',
+    });
+    const wb = dom.window._wb;
+    expect(wb.boxes.length).toBe(0);
+  });
+});
+
 // ============== Pure function unit tests ==============
 const {
   screenToCanvas,
@@ -707,6 +792,10 @@ const {
   buildArrowPath,
   closestSide,
   findBoxAt,
+  escapeXml,
+  generateSVG,
+  encodeState,
+  decodeState,
 } = require('../whiteboard');
 
 describe('pure functions', () => {
@@ -772,5 +861,61 @@ describe('pure functions', () => {
     expect(findBoxAt(boxes, 50, 50)).toBe(boxes[0]);
     expect(findBoxAt(boxes, 200, 200)).toBeNull();
     expect(findBoxAt([], 50, 50)).toBeNull();
+  });
+
+  test('escapeXml escapes special characters', () => {
+    expect(escapeXml('A & B <"C">')).toBe('A &amp; B &lt;&quot;C&quot;&gt;');
+    expect(escapeXml('plain text')).toBe('plain text');
+  });
+
+  test('encodeState/decodeState round-trip', () => {
+    const state = {
+      boxes: [{ id: 1, x: 0, y: 0, w: 200, h: 100, text: 'Hello' }],
+      arrows: [],
+      nextId: 2,
+      freeTexts: [{ id: 'ft-1', x: 50, y: 50, text: 'Note' }],
+    };
+    const encoded = encodeState(state);
+    expect(typeof encoded).toBe('string');
+    expect(encoded.length).toBeGreaterThan(0);
+    const decoded = decodeState(encoded);
+    expect(decoded).toEqual(state);
+  });
+
+  test('encodeState handles unicode text', () => {
+    const state = { boxes: [{ text: 'こんにちは 🎨' }], arrows: [], freeTexts: [] };
+    const decoded = decodeState(encodeState(state));
+    expect(decoded.boxes[0].text).toBe('こんにちは 🎨');
+  });
+
+  test('generateSVG produces valid SVG with boxes and arrows', () => {
+    const boxes = [
+      { id: 1, x: 0, y: 0, w: 200, h: 100, text: 'Box A' },
+      { id: 2, x: 400, y: 0, w: 200, h: 100, text: 'Box B' },
+    ];
+    const arrows = [{ from: 1, to: 2, fromSide: 'right-1', toSide: 'left-1' }];
+    const freeTexts = [{ x: 200, y: 200, text: 'Note' }];
+    const svg = generateSVG(boxes, arrows, freeTexts);
+    expect(svg).toMatch(/^<svg xmlns/);
+    expect(svg).toMatch(/<\/svg>$/);
+    expect(svg).toContain('Box A');
+    expect(svg).toContain('Box B');
+    expect(svg).toContain('Note');
+    expect(svg).toContain('<path');
+    expect(svg).toContain('marker-end');
+  });
+
+  test('generateSVG empty state snapshot', () => {
+    expect(generateSVG([], [], [])).toMatchSnapshot();
+  });
+
+  test('generateSVG with content snapshot', () => {
+    const boxes = [
+      { id: 1, x: 50, y: 50, w: 200, h: 100, text: 'Server' },
+      { id: 2, x: 400, y: 50, w: 200, h: 100, text: 'Client' },
+    ];
+    const arrows = [{ from: 1, to: 2, fromSide: 'right-1', toSide: 'left-1' }];
+    const freeTexts = [{ x: 250, y: 200, text: 'API' }];
+    expect(generateSVG(boxes, arrows, freeTexts)).toMatchSnapshot();
   });
 });

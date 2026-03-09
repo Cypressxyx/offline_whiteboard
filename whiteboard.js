@@ -88,6 +88,103 @@ function findBoxAt(boxes, cx, cy) {
   return null;
 }
 
+function escapeXml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function generateSVG(boxes, arrows, freeTexts) {
+  var padding = 40;
+  var minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  boxes.forEach(function (b) {
+    minX = Math.min(minX, b.x);
+    minY = Math.min(minY, b.y);
+    maxX = Math.max(maxX, b.x + b.w);
+    maxY = Math.max(maxY, b.y + b.h);
+  });
+  freeTexts.forEach(function (ft) {
+    minX = Math.min(minX, ft.x);
+    minY = Math.min(minY, ft.y);
+    maxX = Math.max(maxX, ft.x + 100);
+    maxY = Math.max(maxY, ft.y + 20);
+  });
+  if (minX === Infinity) {
+    minX = 0;
+    minY = 0;
+    maxX = 200;
+    maxY = 200;
+  }
+  var width = maxX - minX + padding * 2;
+  var height = maxY - minY + padding * 2;
+  var ox = -minX + padding;
+  var oy = -minY + padding;
+
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">';
+  svg +=
+    '<defs><marker id="ah" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/></marker></defs>';
+
+  boxes.forEach(function (b) {
+    svg +=
+      '<rect x="' +
+      (b.x + ox) +
+      '" y="' +
+      (b.y + oy) +
+      '" width="' +
+      b.w +
+      '" height="' +
+      b.h +
+      '" rx="12" fill="white" stroke="#e2e8f0" stroke-width="2"/>';
+    svg +=
+      '<text x="' +
+      (b.x + ox + b.w / 2) +
+      '" y="' +
+      (b.y + oy + b.h / 2) +
+      '" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" fill="#334155">' +
+      escapeXml(b.text) +
+      '</text>';
+  });
+
+  arrows.forEach(function (a) {
+    var fromBox = boxes.find(function (b) {
+      return b.id === a.from;
+    });
+    var toBox = boxes.find(function (b) {
+      return b.id === a.to;
+    });
+    if (!fromBox || !toBox) return;
+    var start = getAnchor(fromBox, a.fromSide);
+    var end = getAnchor(toBox, a.toSide);
+    var fromDir = a.fromSide.split('-')[0];
+    var toDir = a.toSide.split('-')[0];
+    var pathD = buildArrowPath({ x: start.x + ox, y: start.y + oy }, { x: end.x + ox, y: end.y + oy }, fromDir, toDir);
+    svg += '<path d="' + pathD + '" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#ah)"/>';
+  });
+
+  freeTexts.forEach(function (ft) {
+    svg +=
+      '<text x="' +
+      (ft.x + ox) +
+      '" y="' +
+      (ft.y + oy) +
+      '" font-family="sans-serif" font-size="15" fill="#334155">' +
+      escapeXml(ft.text) +
+      '</text>';
+  });
+
+  svg += '</svg>';
+  return svg;
+}
+
+function encodeState(state) {
+  return btoa(encodeURIComponent(JSON.stringify(state)));
+}
+
+function decodeState(encoded) {
+  return JSON.parse(decodeURIComponent(atob(encoded)));
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     screenToCanvas,
@@ -97,5 +194,9 @@ if (typeof module !== 'undefined' && module.exports) {
     buildArrowPath,
     closestSide,
     findBoxAt,
+    escapeXml,
+    generateSVG,
+    encodeState,
+    decodeState,
   };
 }

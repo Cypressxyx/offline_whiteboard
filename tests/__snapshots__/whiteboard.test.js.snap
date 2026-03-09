@@ -163,12 +163,34 @@ exports[`initial HTML state renders toolbar 1`] = `
         </svg>
         <span class="btn-label">Clear All</span>
       </button>
-      <button onclick="exportJSON()" title="Save">
-        <svg class="btn-icon" viewBox="0 0 24 24">
-          <path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"></path>
-        </svg>
-        <span class="btn-label">Save</span>
-      </button>
+      <div class="save-wrapper">
+        <button onclick="toggleSaveMenu()" title="Save" id="save-btn">
+          <svg class="btn-icon" viewBox="0 0 24 24">
+            <path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"></path>
+          </svg>
+          <span class="btn-label">Save</span>
+        </button>
+        <div id="save-menu" style="display: none">
+          <button onclick="
+              exportJSON();
+              closeSaveMenu();
+            ">
+            Export JSON
+          </button>
+          <button onclick="
+              exportSVG();
+              closeSaveMenu();
+            ">
+            Export SVG
+          </button>
+          <button onclick="
+              shareURL();
+              closeSaveMenu();
+            ">
+            Copy Share Link
+          </button>
+        </div>
+      </div>
       <button onclick="importJSON()" title="Load">
         <svg class="btn-icon" viewBox="0 0 24 24">
           <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"></path>
@@ -206,6 +228,10 @@ exports[`pure functions buildArrowPath all direction combos snapshot 1`] = `
   "top": "M200,200 L200,300 L500,300 L500,400",
 }
 `;
+
+exports[`pure functions generateSVG empty state snapshot 1`] = `"<svg xmlns="http://www.w3.org/2000/svg" width="280" height="280"><defs><marker id="ah" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/></marker></defs></svg>"`;
+
+exports[`pure functions generateSVG with content snapshot 1`] = `"<svg xmlns="http://www.w3.org/2000/svg" width="630" height="250"><defs><marker id="ah" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/></marker></defs><rect x="40" y="40" width="200" height="100" rx="12" fill="white" stroke="#e2e8f0" stroke-width="2"/><text x="140" y="90" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" fill="#334155">Server</text><rect x="390" y="40" width="200" height="100" rx="12" fill="white" stroke="#e2e8f0" stroke-width="2"/><text x="490" y="90" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" fill="#334155">Client</text><path d="M240,90 L315,90 L315,90 L390,90" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#ah)"/><text x="240" y="190" font-family="sans-serif" font-size="15" fill="#334155">API</text></svg>"`;
 
 exports[`pure functions getAnchor all positions snapshot 1`] = `
 {
@@ -298,6 +324,29 @@ exports[`save and load full state round-trip snapshot 1`] = `
   ],
   "nextId": 3,
 }
+`;
+
+exports[`save menu save menu snapshot 1`] = `
+"
+          <button onclick="
+              exportJSON();
+              closeSaveMenu();
+            ">
+            Export JSON
+          </button>
+          <button onclick="
+              exportSVG();
+              closeSaveMenu();
+            ">
+            Export SVG
+          </button>
+          <button onclick="
+              shareURL();
+              closeSaveMenu();
+            ">
+            Copy Share Link
+          </button>
+        "
 `;
 
 exports[`text mode addFreeText creates a text element 1`] = `

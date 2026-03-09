@@ -794,6 +794,59 @@
         background: #dc2626;
         border-color: #dc2626;
       }
+
+      /* Save menu dropdown */
+      .save-wrapper {
+        position: relative;
+      }
+
+      #save-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 4px;
+        background: var(--toolbar-bg);
+        border-radius: 8px;
+        box-shadow: var(--toolbar-shadow);
+        z-index: 1001;
+        min-width: 160px;
+        padding: 4px;
+      }
+
+      #save-menu button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 8px 12px;
+        border: none !important;
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--btn-text);
+        background: none;
+        cursor: pointer;
+        font-family: var(--font);
+      }
+
+      #save-menu button:hover {
+        background: var(--btn-hover-bg) !important;
+      }
+
+      /* Share toast */
+      #share-toast {
+        position: fixed;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--toolbar-bg);
+        color: var(--modal-text);
+        padding: 10px 20px;
+        border-radius: 8px;
+        box-shadow: var(--toolbar-shadow);
+        font-size: 13px;
+        font-family: var(--font);
+        z-index: 10000;
+        animation: fadeIn 0.2s;
+      }
     </style>
   </head>
   <body>
@@ -819,14 +872,42 @@
         </svg>
         <span class="btn-label">Clear All</span>
       </button>
-      <button onclick="exportJSON()" title="Save">
-        <svg class="btn-icon" viewBox="0 0 24 24">
-          <path
-            d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
-          />
-        </svg>
-        <span class="btn-label">Save</span>
-      </button>
+      <div class="save-wrapper">
+        <button onclick="toggleSaveMenu()" title="Save" id="save-btn">
+          <svg class="btn-icon" viewBox="0 0 24 24">
+            <path
+              d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"
+            />
+          </svg>
+          <span class="btn-label">Save</span>
+        </button>
+        <div id="save-menu" style="display: none">
+          <button
+            onclick="
+              exportJSON();
+              closeSaveMenu();
+            "
+          >
+            Export JSON
+          </button>
+          <button
+            onclick="
+              exportSVG();
+              closeSaveMenu();
+            "
+          >
+            Export SVG
+          </button>
+          <button
+            onclick="
+              shareURL();
+              closeSaveMenu();
+            "
+          >
+            Copy Share Link
+          </button>
+        </div>
+      </div>
       <button onclick="importJSON()" title="Load">
         <svg class="btn-icon" viewBox="0 0 24 24">
           <path
@@ -3023,14 +3104,63 @@
         closeConfirm();
       }
 
+      function toggleSaveMenu() {
+        const menu = document.getElementById('save-menu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+      }
+
+      function closeSaveMenu() {
+        document.getElementById('save-menu').style.display = 'none';
+      }
+
+      document.addEventListener('click', function (e) {
+        const wrapper = document.querySelector('.save-wrapper');
+        if (wrapper && !wrapper.contains(e.target)) closeSaveMenu();
+      });
+
       function exportJSON() {
-        const data = JSON.stringify({ boxes, arrows, nextId }, null, 2);
+        const data = JSON.stringify({ boxes, arrows, nextId, freeTexts }, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'whiteboard.json';
         a.click();
         URL.revokeObjectURL(a.href);
+      }
+
+      function exportSVG() {
+        const svgStr = generateSVG(boxes, arrows, freeTexts);
+        const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'whiteboard.svg';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      function shareURL() {
+        const state = { boxes, arrows, nextId, freeTexts };
+        const encoded = encodeState(state);
+        const url = location.origin + location.pathname + '#state=' + encoded;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(url).then(function () {
+            showToast('Share link copied to clipboard');
+          });
+        } else {
+          prompt('Copy this share link:', url);
+        }
+      }
+
+      function showToast(msg) {
+        const existing = document.getElementById('share-toast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.id = 'share-toast';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(function () {
+          toast.remove();
+        }, 2500);
       }
 
       function importJSON() {
@@ -3067,7 +3197,28 @@
       // --- Init ---
       const savedTheme = localStorage.getItem('whiteboard-theme') || 'light';
       applyTheme(savedTheme);
-      load();
+
+      // Check URL for shared state
+      const hashMatch = location.hash.match(/^#state=(.+)/);
+      if (hashMatch) {
+        try {
+          const data = decodeState(hashMatch[1]);
+          boxes = data.boxes || [];
+          arrows = data.arrows || [];
+          nextId = data.nextId || 1;
+          freeTexts = [];
+          boxes.forEach((b) => createBoxElement(b));
+          (data.freeTexts || []).forEach((ft) => addFreeText(ft.x, ft.y, ft.text, ft.id));
+          renderArrows();
+          lastSavedSnapshot = getSnapshot();
+          localStorage.setItem('whiteboard-data', lastSavedSnapshot);
+          history.replaceState(null, '', location.pathname);
+        } catch (e) {
+          load();
+        }
+      } else {
+        load();
+      }
       updateTransform();
 
       // Expose internals for testing
@@ -3115,6 +3266,10 @@
         undo,
         redo,
         save,
+        toggleSaveMenu,
+        closeSaveMenu,
+        exportSVG,
+        shareURL,
       };
     </script>
   </body>
