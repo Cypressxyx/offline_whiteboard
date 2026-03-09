@@ -22,7 +22,8 @@ A minimal, offline-first whiteboard for system design. Single HTML file, no depe
 
 ```
 npm install
-npm run validate
+npm run build
+open dist/index.html
 ```
 
-This runs formatting, linting, tests, and builds a minified single-file bundle to `dist/`.
+This runs formatting, linting, tests, and builds a minified single-file bundle to `dist/index.html`.
