@@ -1499,14 +1499,30 @@ function createBoxElement(box) {
     }
   });
 
-  el.addEventListener('dblclick', (e) => {
-    e.stopPropagation();
+  function startEditing() {
     text.contentEditable = 'true';
     text.focus();
     const range = document.createRange();
     range.selectNodeContents(text);
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
+  }
+
+  el.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    startEditing();
+  });
+
+  // Double-tap for iOS
+  let lastTap = 0;
+  el.addEventListener('touchend', (e) => {
+    if (text.contentEditable === 'true') return;
+    const now = Date.now();
+    if (now - lastTap < 350) {
+      e.preventDefault();
+      startEditing();
+    }
+    lastTap = now;
   });
 
   text.addEventListener('blur', () => {
@@ -1534,19 +1550,26 @@ function createBoxElement(box) {
     el.classList.add('dragging');
   });
 
-  // Touch drag
+  // Touch drag — use a small delay so double-tap can fire first
+  let touchDragTimer = null;
   el.addEventListener('touchstart', (e) => {
     if (text.contentEditable === 'true') return;
     if (e.touches.length !== 1) return;
     e.stopPropagation();
-    selectBox(box.id);
-    isDragging = true;
-    dragBoxId = box.id;
     const t = e.touches[0];
     const cp = screenToCanvas(t.clientX, t.clientY);
-    dragOffset.x = cp.x - box.x;
-    dragOffset.y = cp.y - box.y;
-    el.classList.add('dragging');
+    touchDragTimer = setTimeout(() => {
+      selectBox(box.id);
+      isDragging = true;
+      dragBoxId = box.id;
+      dragOffset.x = cp.x - box.x;
+      dragOffset.y = cp.y - box.y;
+      el.classList.add('dragging');
+    }, 150);
+  }, { passive: true });
+
+  el.addEventListener('touchend', () => {
+    if (touchDragTimer) { clearTimeout(touchDragTimer); touchDragTimer = null; }
   }, { passive: true });
 
   canvas.appendChild(el);
