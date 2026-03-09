@@ -66,6 +66,27 @@
     font-size: 14px;
     color: var(--toolbar-text);
     transition: background 0.3s, color 0.3s;
+    max-width: calc(100vw - 24px);
+  }
+
+  .btn-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    #toolbar {
+      gap: 6px;
+      padding: 6px 10px;
+      top: 8px;
+    }
+    #toolbar .title { display: none; }
+    #toolbar .title + .sep { display: none; }
+    .btn-label { display: none; }
+    #toolbar button { padding: 5px 8px; }
+    #toolbar .sep { display: none; }
   }
 
   #toolbar .title {
@@ -86,6 +107,9 @@
     color: var(--btn-text);
     transition: all 0.15s;
     font-family: var(--font);
+    display: flex;
+    align-items: center;
+    gap: 5px;
   }
 
   #toolbar button:hover:not(:disabled) {
@@ -639,9 +663,18 @@
     <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16a8.002 8.002 0 017.6-5.5c1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
   </button>
   <span class="sep">|</span>
-  <button onclick="clearAll()">Clear All</button>
-  <button onclick="exportJSON()">Save</button>
-  <button onclick="importJSON()">Load</button>
+  <button onclick="clearAll()" title="Clear All">
+    <svg class="btn-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+    <span class="btn-label">Clear All</span>
+  </button>
+  <button onclick="exportJSON()" title="Save">
+    <svg class="btn-icon" viewBox="0 0 24 24"><path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+    <span class="btn-label">Save</span>
+  </button>
+  <button onclick="importJSON()" title="Load">
+    <svg class="btn-icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+    <span class="btn-label">Load</span>
+  </button>
   <span class="sep">|</span>
   <button id="text-mode-btn" class="icon-btn" onclick="toggleTextMode()" title="Text mode (T)">
     <svg viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>
@@ -649,6 +682,9 @@
   <span class="sep">|</span>
   <button class="icon-btn" onclick="resetView()" title="Reset view">
     <svg viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
+  </button>
+  <button id="delete-btn" class="icon-btn" onclick="deleteSelected()" title="Delete (Backspace)" style="display:none;">
+    <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
   </button>
   <button class="icon-btn gear-btn" onclick="openThemeModal()" title="Themes">
     <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
@@ -1521,8 +1557,14 @@ function addBox(x, y, w, h, text) {
   const box = { id: nextId++, x, y, w: Math.max(w, 100), h: Math.max(h, 50), text: text || 'New Box' };
   boxes.push(box);
   createBoxElement(box);
+  selectBox(box.id);
   save();
   return box;
+}
+
+function updateDeleteButton() {
+  document.getElementById('delete-btn').style.display =
+    (selectedBoxId !== null || selectedArrowIdx !== null) ? '' : 'none';
 }
 
 function selectBox(id) {
@@ -1533,6 +1575,19 @@ function selectBox(id) {
     el.classList.toggle('selected', isSelected);
     if (isSelected && el._updateMarch) requestAnimationFrame(el._updateMarch);
   });
+  updateDeleteButton();
+}
+
+function deleteSelected() {
+  if (selectedArrowIdx !== null) {
+    arrows.splice(selectedArrowIdx, 1);
+    selectedArrowIdx = null;
+    renderArrows();
+    save();
+  } else if (selectedBoxId !== null) {
+    deleteBox(selectedBoxId);
+  }
+  updateDeleteButton();
 }
 
 function deleteBox(id) {
@@ -1838,6 +1893,7 @@ function selectArrow(idx) {
   selectedBoxId = null;
   document.querySelectorAll('.box').forEach(el => el.classList.remove('selected'));
   renderArrows();
+  updateDeleteButton();
 }
 
 function deselectArrow() {
@@ -1845,6 +1901,7 @@ function deselectArrow() {
     selectedArrowIdx = null;
     renderArrows();
   }
+  updateDeleteButton();
 }
 
 // --- Viewport mouse events ---
@@ -1860,6 +1917,13 @@ viewport.addEventListener('mousedown', (e) => {
 
   // Left click on empty canvas
   if (e.button === 0 && e.target === viewport) {
+    // If something is selected, just deselect without starting a new box
+    if (selectedBoxId !== null || selectedArrowIdx !== null) {
+      selectBox(null);
+      deselectArrow();
+      return;
+    }
+
     selectBox(null);
     deselectArrow();
 
