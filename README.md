@@ -14,7 +14,8 @@ A minimal, offline-first whiteboard for system design. Single HTML file, no depe
 - **27 Themes** — Nord, Dracula, Kanagawa, Gruvbox, Catppuccin, Tokyo Night, and more.
 - **Undo/Redo** — `Cmd/Ctrl+Z` and `Cmd/Ctrl+Shift+Z`, also in the toolbar.
 - **Selection** — Marching ants on selected boxes and arrows. Delete with `Backspace`.
-- **Save/Load** — Export and import as JSON. Auto-saves to localStorage.
+- **Save/Load** — Export as JSON or SVG. Import from JSON. Auto-saves to localStorage.
+- **Share via URL** — Copy a share link that encodes the full whiteboard state in the URL.
 - **Mobile Ready** — Touch support for pan, zoom, drag, and text editing.
 - **Fully Offline** — No server, no build step. Just one HTML file.
 
