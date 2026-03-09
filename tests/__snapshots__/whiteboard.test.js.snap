@@ -1,64 +1,175 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`arrow path between boxes all slot combos snapshot 1`] = `
+exports[`arrow operations arrow between two boxes renders SVG paths 1`] = `
+"
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        <path d="M200,50 L300,50 L300,250 L400,250" class="arrow-line"></path><path d="M200,50 L300,50 L300,250 L400,250" class="arrow-clickable"></path>"
+`;
+
+exports[`arrow operations multiple arrows snapshot 1`] = `
+"
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        <path d="M200,50 L300,50 L300,50 L400,50" class="arrow-line"></path><path d="M200,50 L300,50 L300,50 L400,50" class="arrow-clickable"></path><path d="M100,100 L100,200 L300,200 L300,300" class="arrow-line"></path><path d="M100,100 L100,200 L300,200 L300,300" class="arrow-clickable"></path><path d="M500,100 L500,225 L400,225 L400,350" class="arrow-line"></path><path d="M500,100 L500,225 L400,225 L400,350" class="arrow-clickable"></path>"
+`;
+
+exports[`arrow operations selected arrow shows endpoint circles 1`] = `
+"
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        <path d="M200,50 L300,50 L300,50 L400,50" class="arrow-line arrow-selected"></path><path d="M200,50 L300,50 L300,50 L400,50" class="arrow-clickable"></path><circle cx="200" cy="50" r="5" class="arrow-endpoint"></circle><circle cx="400" cy="50" r="5" class="arrow-endpoint"></circle>"
+`;
+
+exports[`box operations addBox creates a box in the DOM 1`] = `
+"
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        </svg>
+      <div class="box selected" data-id="ID" style="left: 100px; top: 100px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Test Box</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div>"
+`;
+
+exports[`box operations deleteBox removes box from DOM 1`] = `
+"
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        </svg>
+      "
+`;
+
+exports[`box operations multiple boxes snapshot 1`] = `
+"
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        </svg>
+      <div class="box" data-id="ID" style="left: 0px; top: 0px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Box A</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box" data-id="ID" style="left: 300px; top: 200px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Box B</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box selected" data-id="ID" style="left: 100px; top: 400px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Box C</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div>"
+`;
+
+exports[`clear all confirmClear removes everything 1`] = `
+"
+        <svg id="arrows"></svg>
+      "
+`;
+
+exports[`full state integration complex whiteboard state snapshot 1`] = `
+"
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        <path d="M250,100 L325,100 L325,100 L400,100" class="arrow-line"></path><path d="M250,100 L325,100 L325,100 L400,100" class="arrow-clickable"></path><path d="M500,150 L500,225 L500,225 L500,300" class="arrow-line"></path><path d="M500,150 L500,225 L500,225 L500,300" class="arrow-clickable"></path><path d="M400,350 L325,350 L325,350 L250,350" class="arrow-line"></path><path d="M400,350 L325,350 L325,350 L250,350" class="arrow-clickable"></path><path d="M150,150 L150,225 L150,225 L150,300" class="arrow-line"></path><path d="M150,150 L150,225 L150,225 L150,300" class="arrow-clickable"></path></svg>
+      <div class="box" data-id="ID" style="left: 50px; top: 50px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">API Gateway</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box" data-id="ID" style="left: 400px; top: 50px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Auth Service</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box" data-id="ID" style="left: 400px; top: 300px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Database</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box selected" data-id="ID" style="left: 50px; top: 300px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Cache</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="free-text" data-ft-id="ft-ID" style="left: 250px; top: 200px;"></div>"
+`;
+
+exports[`full state integration complex whiteboard state snapshot 2`] = `
+"
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        <path d="M250,100 L325,100 L325,100 L400,100" class="arrow-line"></path><path d="M250,100 L325,100 L325,100 L400,100" class="arrow-clickable"></path><path d="M500,150 L500,225 L500,225 L500,300" class="arrow-line"></path><path d="M500,150 L500,225 L500,225 L500,300" class="arrow-clickable"></path><path d="M400,350 L325,350 L325,350 L250,350" class="arrow-line"></path><path d="M400,350 L325,350 L325,350 L250,350" class="arrow-clickable"></path><path d="M150,150 L150,225 L150,225 L150,300" class="arrow-line"></path><path d="M150,150 L150,225 L150,225 L150,300" class="arrow-clickable"></path>"
+`;
+
+exports[`initial HTML state initial canvas snapshot 1`] = `
+"
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        </svg>
+      "
+`;
+
+exports[`initial HTML state renders toolbar 1`] = `
+"
+      <button id="undo-btn" class="icon-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled="">
+        <svg viewBox="0 0 24 24">
+          <path d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.73L3 8v9h9l-2.83-2.83A7.004 7.004 0 0119 12c0-.35-.02-.7-.07-1.04l1.98-.35A8.97 8.97 0 0112.5 8z"></path>
+        </svg>
+      </button>
+      <button id="redo-btn" class="icon-btn" onclick="redo()" title="Redo (Ctrl+Shift+Z)" disabled="">
+        <svg viewBox="0 0 24 24">
+          <path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16a8.002 8.002 0 017.6-5.5c1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"></path>
+        </svg>
+      </button>
+      <span class="sep">|</span>
+      <button onclick="clearAll()" title="Clear All">
+        <svg class="btn-icon" viewBox="0 0 24 24">
+          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path>
+        </svg>
+        <span class="btn-label">Clear All</span>
+      </button>
+      <button onclick="exportJSON()" title="Save">
+        <svg class="btn-icon" viewBox="0 0 24 24">
+          <path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"></path>
+        </svg>
+        <span class="btn-label">Save</span>
+      </button>
+      <button onclick="importJSON()" title="Load">
+        <svg class="btn-icon" viewBox="0 0 24 24">
+          <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"></path>
+        </svg>
+        <span class="btn-label">Load</span>
+      </button>
+      <span class="sep">|</span>
+      <button id="text-mode-btn" class="icon-btn" onclick="toggleTextMode()" title="Text mode (T)">
+        <svg viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4H5z"></path></svg>
+      </button>
+      <span class="sep">|</span>
+      <button class="icon-btn" onclick="resetView()" title="Reset view">
+        <svg viewBox="0 0 24 24">
+          <path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"></path>
+        </svg>
+      </button>
+      <button id="delete-btn" class="icon-btn" onclick="deleteSelected()" title="Delete (Backspace)" style="display: none">
+        <svg viewBox="0 0 24 24">
+          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path>
+        </svg>
+      </button>
+      <button class="icon-btn gear-btn" onclick="openThemeModal()" title="Themes">
+        <svg viewBox="0 0 24 24">
+          <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"></path>
+        </svg>
+      </button>
+    "
+`;
+
+exports[`pure functions buildArrowPath all direction combos snapshot 1`] = `
 {
-  "right-0 -> left-0": "M300,125 L350,125 L350,325 L400,325",
-  "right-0 -> left-1": "M300,125 L350,125 L350,350 L400,350",
-  "right-0 -> left-2": "M300,125 L350,125 L350,375 L400,375",
-  "right-1 -> left-0": "M300,150 L350,150 L350,325 L400,325",
-  "right-1 -> left-1": "M300,150 L350,150 L350,350 L400,350",
-  "right-1 -> left-2": "M300,150 L350,150 L350,375 L400,375",
-  "right-2 -> left-0": "M300,175 L350,175 L350,325 L400,325",
-  "right-2 -> left-1": "M300,175 L350,175 L350,350 L400,350",
-  "right-2 -> left-2": "M300,175 L350,175 L350,375 L400,375",
+  "bottom": "M200,200 L200,300 L500,300 L500,400",
+  "left": "M200,200 L350,200 L350,400 L500,400",
+  "right": "M200,200 L350,200 L350,400 L500,400",
+  "top": "M200,200 L200,300 L500,300 L500,400",
 }
 `;
 
-exports[`arrow path between boxes bottom-to-top connection 1`] = `"M200,200 L200,250 L500,250 L500,300"`;
-
-exports[`arrow path between boxes right-to-left connection 1`] = `"M300,150 L350,150 L350,350 L400,350"`;
-
-exports[`buildArrowPath snapshot: various direction combos 1`] = `
-{
-  "bottom->bottom": "M200,200 L200,300 L500,300 L500,400",
-  "bottom->left": "M200,200 L200,300 L500,300 L500,400",
-  "bottom->right": "M200,200 L200,300 L500,300 L500,400",
-  "bottom->top": "M200,200 L200,300 L500,300 L500,400",
-  "left->bottom": "M200,200 L350,200 L350,400 L500,400",
-  "left->left": "M200,200 L350,200 L350,400 L500,400",
-  "left->right": "M200,200 L350,200 L350,400 L500,400",
-  "left->top": "M200,200 L350,200 L350,400 L500,400",
-  "right->bottom": "M200,200 L350,200 L350,400 L500,400",
-  "right->left": "M200,200 L350,200 L350,400 L500,400",
-  "right->right": "M200,200 L350,200 L350,400 L500,400",
-  "right->top": "M200,200 L350,200 L350,400 L500,400",
-  "top->bottom": "M200,200 L200,300 L500,300 L500,400",
-  "top->left": "M200,200 L200,300 L500,300 L500,400",
-  "top->right": "M200,200 L200,300 L500,300 L500,400",
-  "top->top": "M200,200 L200,300 L500,300 L500,400",
-}
-`;
-
-exports[`closestSide snapshot: grid of test points 1`] = `
-{
-  "(100,125)": "left-0",
-  "(100,150)": "left-1",
-  "(100,175)": "left-2",
-  "(150,100)": "top-0",
-  "(150,200)": "bottom-0",
-  "(200,100)": "top-1",
-  "(200,200)": "bottom-1",
-  "(250,100)": "top-2",
-  "(250,200)": "bottom-2",
-  "(300,125)": "right-0",
-  "(300,150)": "right-1",
-  "(300,175)": "right-2",
-}
-`;
-
-exports[`edge cases buildArrowPath with same start and end 1`] = `"M200,200 L200,200 L200,200 L200,200"`;
-
-exports[`getAnchor snapshot: all anchors 1`] = `
+exports[`pure functions getAnchor all positions snapshot 1`] = `
 {
   "bottom-0": {
     "x": 150,
@@ -111,10 +222,77 @@ exports[`getAnchor snapshot: all anchors 1`] = `
 }
 `;
 
-exports[`zoomAt snapshot: zoom state 1`] = `
+exports[`text mode addFreeText creates a text element 1`] = `
+"
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        </svg>
+      <div class="free-text" data-ft-id="ft-ID" style="left: 100px; top: 200px;"></div>"
+`;
+
+exports[`text mode multiple free texts snapshot 1`] = `
+"
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        </svg>
+      <div class="free-text" data-ft-id="ft-ID" style="left: 50px; top: 50px;"></div><div class="free-text" data-ft-id="ft-ID" style="left: 200px; top: 300px;"></div><div class="free-text" data-ft-id="ft-ID" style="left: 400px; top: 100px;"></div>"
+`;
+
+exports[`themes all theme keys snapshot 1`] = `
+[
+  "ayu",
+  "ayuLight",
+  "catppuccin",
+  "cobalt2",
+  "dracula",
+  "everforest",
+  "github",
+  "githubLight",
+  "gruvbox",
+  "kanagawa",
+  "kanagawaLight",
+  "kanagawaWave",
+  "light",
+  "matrix",
+  "midnight",
+  "monokai",
+  "nightowl",
+  "nord",
+  "onedark",
+  "onelight",
+  "palenight",
+  "poimandres",
+  "rosepine",
+  "solarized",
+  "solarizedLight",
+  "synthwave",
+  "tokyo",
+  "vesper",
+  "vitesse",
+]
+`;
+
+exports[`undo/redo undo/redo full cycle snapshot 1`] = `
 {
-  "panX": -100,
-  "panY": -75,
-  "scale": 1.25,
+  "afterTwo": "
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        </svg>
+      <div class="box" data-id="ID" style="left: 0px; top: 0px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">First</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box selected" data-id="ID" style="left: 300px; top: 300px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Second</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div>",
+  "afterUndo": "
+        <svg id="arrows"></svg>
+      <div class="box" data-id="ID" style="left: 0px; top: 0px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">First</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div>",
 }
 `;

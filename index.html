@@ -2854,8 +2854,10 @@
         return JSON.stringify({ boxes, arrows, nextId, freeTexts });
       }
 
+      let lastSavedSnapshot = getSnapshot();
+
       function pushUndo() {
-        undoStack.push(getSnapshot());
+        undoStack.push(lastSavedSnapshot);
         if (undoStack.length > MAX_HISTORY) undoStack.shift();
         redoStack.length = 0;
         updateUndoRedoButtons();
@@ -2899,7 +2901,8 @@
 
       function save() {
         pushUndo();
-        localStorage.setItem('whiteboard-data', getSnapshot());
+        lastSavedSnapshot = getSnapshot();
+        localStorage.setItem('whiteboard-data', lastSavedSnapshot);
       }
 
       function load() {
@@ -3066,6 +3069,53 @@
       applyTheme(savedTheme);
       load();
       updateTransform();
+
+      // Expose internals for testing
+      window._wb = {
+        get boxes() {
+          return boxes;
+        },
+        set boxes(v) {
+          boxes = v;
+        },
+        get arrows() {
+          return arrows;
+        },
+        set arrows(v) {
+          arrows = v;
+        },
+        get freeTexts() {
+          return freeTexts;
+        },
+        get nextId() {
+          return nextId;
+        },
+        get selectedBoxId() {
+          return selectedBoxId;
+        },
+        get selectedArrowIdx() {
+          return selectedArrowIdx;
+        },
+        get textMode() {
+          return textMode;
+        },
+        get THEMES() {
+          return THEMES;
+        },
+        addBox,
+        deleteBox,
+        selectBox,
+        selectArrow,
+        deselectArrow,
+        renderArrows,
+        confirmClear,
+        applyTheme,
+        toggleTextMode,
+        addFreeText,
+        undo,
+        redo,
+        save,
+      };
     </script>
   </body>
 </html>
