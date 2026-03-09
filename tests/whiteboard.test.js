@@ -67,6 +67,85 @@ describe('initial HTML state', () => {
   test('initial canvas snapshot', () => {
     expect(canvasSnapshot(doc)).toMatchSnapshot();
   });
+
+  test('no hint bar in DOM', () => {
+    expect(doc.querySelector('.hint')).toBeNull();
+  });
+
+  test('buy me a coffee link exists', () => {
+    const bmc = doc.getElementById('bmc-link');
+    expect(bmc).toBeTruthy();
+    expect(bmc.tagName).toBe('A');
+    expect(bmc.getAttribute('href')).toContain('buymeacoffee.com');
+  });
+
+  test('zoom controls exist', () => {
+    const zoom = doc.getElementById('zoom-controls');
+    expect(zoom).toBeTruthy();
+    expect(zoom.querySelector('#zoom-level')).toBeTruthy();
+    expect(zoom.querySelectorAll('button').length).toBe(2);
+  });
+});
+
+// ============== Mobile layout rules ==============
+describe('mobile layout CSS rules', () => {
+  let doc, win;
+  beforeEach(() => ({ win, doc } = loadApp()));
+
+  function getMobileRules() {
+    const rules = [];
+    for (const sheet of doc.styleSheets) {
+      for (const rule of sheet.cssRules) {
+        if (rule.type === win.CSSRule.MEDIA_RULE && rule.conditionText && rule.conditionText.includes('max-width')) {
+          for (const inner of rule.cssRules) {
+            rules.push(inner);
+          }
+        }
+      }
+    }
+    return rules;
+  }
+
+  function findMobileRule(selector) {
+    return getMobileRules().find((r) => r.selectorText === selector);
+  }
+
+  test('no hint bar rule in mobile styles', () => {
+    const hintRule = findMobileRule('.hint');
+    expect(hintRule).toBeUndefined();
+  });
+
+  test('bmc-link is visible on mobile (not display:none)', () => {
+    const rule = findMobileRule('#bmc-link');
+    expect(rule).toBeTruthy();
+    expect(rule.style.display).not.toBe('none');
+  });
+
+  test('bmc-link shows icon-only on mobile', () => {
+    const rule = findMobileRule('#bmc-link');
+    expect(rule).toBeTruthy();
+    expect(rule.style.getPropertyValue('font-size')).toBe('0');
+  });
+
+  test('zoom-controls is visible on mobile (not display:none)', () => {
+    const rule = findMobileRule('#zoom-controls');
+    expect(rule).toBeTruthy();
+    expect(rule.style.display).not.toBe('none');
+  });
+
+  test('zoom-controls positioned at bottom-right on mobile', () => {
+    const rule = findMobileRule('#zoom-controls');
+    expect(rule).toBeTruthy();
+    expect(rule.style.bottom).toBe('8px');
+    expect(rule.style.right).toBe('8px');
+  });
+
+  test('bmc-link positioned at bottom-left on mobile', () => {
+    const rule = findMobileRule('#bmc-link');
+    expect(rule).toBeTruthy();
+    expect(rule.style.bottom).toBe('8px');
+    expect(rule.style.left).toBe('8px');
+  });
 });
 
 // ============== Box operations ==============

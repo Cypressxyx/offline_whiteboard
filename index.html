@@ -105,9 +105,6 @@
         #toolbar .sep {
           display: none;
         }
-        .hint {
-          display: none;
-        }
         #bmc-link {
           bottom: 8px;
           left: 8px;
@@ -483,32 +480,6 @@
         background: var(--draw-preview-bg);
         pointer-events: none;
         z-index: 5;
-      }
-
-      .hint {
-        position: fixed;
-        bottom: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: var(--hint-bg);
-        border-radius: 10px;
-        padding: 8px 16px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-        font-size: 12px;
-        color: var(--hint-text);
-        z-index: 1000;
-        transition:
-          background 0.3s,
-          color 0.3s,
-          opacity 0.5s;
-        white-space: nowrap;
-        opacity: 1;
-        cursor: pointer;
-      }
-
-      .hint.hidden {
-        opacity: 0;
-        pointer-events: none;
       }
 
       /* Buy me a coffee */
@@ -1052,11 +1023,6 @@
       <button onclick="zoomBy(-0.15)" title="Zoom out">-</button>
       <span id="zoom-level" onclick="resetView()" title="Reset zoom">100%</span>
       <button onclick="zoomBy(0.15)" title="Zoom in">+</button>
-    </div>
-
-    <div class="hint" onclick="this.classList.add('hidden')">
-      Scroll to pan &middot; Pinch or Ctrl+Scroll to zoom &middot; Click to place box &middot; Double-click to edit
-      &middot; Hover edges for arrows
     </div>
 
     <script src="whiteboard.js"></script>
@@ -2273,12 +2239,6 @@
         load();
       }
       updateTransform();
-
-      // Auto-dismiss hint after 5 seconds
-      setTimeout(function () {
-        const hint = document.querySelector('.hint');
-        if (hint) hint.classList.add('hidden');
-      }, 5000);
 
       // Expose internals for testing
       window._wb = {
