@@ -66,10 +66,48 @@ exports[`box operations multiple boxes snapshot 1`] = `
       <div class="box" data-id="ID" style="left: 0px; top: 0px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Box A</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box" data-id="ID" style="left: 300px; top: 200px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Box B</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box selected" data-id="ID" style="left: 100px; top: 400px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Box C</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div>"
 `;
 
+exports[`box text editing text editing snapshot before and after 1`] = `
+{
+  "afterEdit": "
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        </svg>
+      <div class="box selected" data-id="ID" style="left: 100px; top: 100px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Modified</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div>",
+  "beforeEdit": "
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        </svg>
+      <div class="box selected" data-id="ID" style="left: 100px; top: 100px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Initial</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div>",
+}
+`;
+
 exports[`clear all confirmClear removes everything 1`] = `
 "
         <svg id="arrows"></svg>
       "
+`;
+
+exports[`edge handles edge handles snapshot 1`] = `
+"<div class="edge-handle top-0"></div>
+<div class="edge-handle top-1"></div>
+<div class="edge-handle top-2"></div>
+<div class="edge-handle right-0"></div>
+<div class="edge-handle right-1"></div>
+<div class="edge-handle right-2"></div>
+<div class="edge-handle bottom-0"></div>
+<div class="edge-handle bottom-1"></div>
+<div class="edge-handle bottom-2"></div>
+<div class="edge-handle left-0"></div>
+<div class="edge-handle left-1"></div>
+<div class="edge-handle left-2"></div>"
 `;
 
 exports[`full state integration complex whiteboard state snapshot 1`] = `
@@ -219,6 +257,46 @@ exports[`pure functions getAnchor all positions snapshot 1`] = `
     "x": 250,
     "y": 100,
   },
+}
+`;
+
+exports[`save and load full state round-trip snapshot 1`] = `
+{
+  "arrows": [
+    {
+      "from": 1,
+      "fromSide": "right-1",
+      "to": 2,
+      "toSide": "left-1",
+    },
+  ],
+  "boxes": [
+    {
+      "h": 100,
+      "id": 1,
+      "text": "Server",
+      "w": 200,
+      "x": 50,
+      "y": 50,
+    },
+    {
+      "h": 100,
+      "id": 2,
+      "text": "Client",
+      "w": 200,
+      "x": 400,
+      "y": 50,
+    },
+  ],
+  "freeTexts": [
+    {
+      "id": "ft-NORMALIZED",
+      "text": "Note",
+      "x": 200,
+      "y": 200,
+    },
+  ],
+  "nextId": 3,
 }
 `;
 
