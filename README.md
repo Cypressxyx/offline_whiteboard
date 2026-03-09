@@ -11,7 +11,14 @@ A minimal, offline-first whiteboard for system design. Single HTML file, no depe
 - **Free Text** — Press `T` to toggle text mode, click anywhere to place text.
 - **Step Connectors** — Arrows route with clean right-angle bends.
 - **Infinite Canvas** — Pan with space+drag or middle mouse. Zoom with pinch or Ctrl+scroll.
-- **29 Themes**
+- **Undo/Redo** — `Cmd/Ctrl+Z` and `Cmd/Ctrl+Shift+Z`, also in the toolbar.
+- **Selection** — Marching ants on selected boxes and arrows. Delete with `Backspace`.
+- **Save/Load** — Export as JSON or SVG. Import from JSON. Auto-saves to localStorage.
+- **Share via URL** — Copy a share link that encodes the full whiteboard state in the URL.
+- **Mobile Ready** — Touch support for pan, zoom, drag, and text editing.
+- **Fully Offline** — No server, no build step. Just one HTML file.
+
+## 29 Themes
 
 | | | | |
 |---|---|---|---|
@@ -23,12 +30,6 @@ A minimal, offline-first whiteboard for system design. Single HTML file, no depe
 | Ayu Dark | Ayu Light | Palenight | Synthwave 84 |
 | Cobalt2 | Vitesse Dark | Poimandres | Vesper |
 | Midnight | | | |
-- **Undo/Redo** — `Cmd/Ctrl+Z` and `Cmd/Ctrl+Shift+Z`, also in the toolbar.
-- **Selection** — Marching ants on selected boxes and arrows. Delete with `Backspace`.
-- **Save/Load** — Export as JSON or SVG. Import from JSON. Auto-saves to localStorage.
-- **Share via URL** — Copy a share link that encodes the full whiteboard state in the URL.
-- **Mobile Ready** — Touch support for pan, zoom, drag, and text editing.
-- **Fully Offline** — No server, no build step. Just one HTML file.
 
 ## Development
 
