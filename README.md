@@ -17,3 +17,12 @@ A minimal, offline-first whiteboard for system design. Single HTML file, no depe
 - **Save/Load** — Export and import as JSON. Auto-saves to localStorage.
 - **Mobile Ready** — Touch support for pan, zoom, drag, and text editing.
 - **Fully Offline** — No server, no build step. Just one HTML file.
+
+## Development
+
+```
+npm install
+npm run validate
+```
+
+This runs formatting check, linting (HTML + JS), and 73 tests.
