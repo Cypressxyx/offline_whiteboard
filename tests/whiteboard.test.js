@@ -5,6 +5,19 @@ const { JSDOM } = require('jsdom');
 const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf8');
 const wbJS = fs.readFileSync(path.resolve(__dirname, '../whiteboard.js'), 'utf8');
 const inlinedHTML = html.replace('<script src="whiteboard.js"></script>', `<script>${wbJS}</script>`);
+const {
+  screenToCanvas,
+  zoomAt,
+  getAnchor,
+  oppositeSide,
+  buildArrowPath,
+  closestSide,
+  findBoxAt,
+  escapeXml,
+  generateSVG,
+  encodeState,
+  decodeState,
+} = require('../whiteboard');
 
 function loadApp() {
   const dom = new JSDOM(inlinedHTML, {
@@ -728,6 +741,21 @@ describe('save menu', () => {
   test('save menu snapshot', () => {
     expect(doc.getElementById('save-menu').innerHTML).toMatchSnapshot();
   });
+
+  test('exportSVG generates valid SVG from live state snapshot', () => {
+    wb.addBox(50, 50, 200, 100, 'API Gateway');
+    wb.addBox(400, 50, 200, 100, 'Database');
+    wb.arrows.push({ from: wb.boxes[0].id, to: wb.boxes[1].id, fromSide: 'right-1', toSide: 'left-1' });
+    wb.addFreeText(200, 200, 'REST API');
+
+    const svg = generateSVG(wb.boxes, wb.arrows, wb.freeTexts);
+    expect(svg).toMatch(/^<svg xmlns/);
+    expect(svg).toContain('API Gateway');
+    expect(svg).toContain('Database');
+    expect(svg).toContain('REST API');
+    expect(svg).toContain('<path');
+    expect(svg).toMatchSnapshot();
+  });
 });
 
 // ============== URL state sharing ==============
@@ -812,6 +840,41 @@ describe('URL state sharing', () => {
     expect({ originalCanvas, originalSvg }).toMatchSnapshot();
   });
 
+  test('shareURL generates correct URL with encoded state', () => {
+    const dom = new JSDOM(inlinedHTML, {
+      runScripts: 'dangerously',
+      pretendToBeVisual: true,
+      url: 'http://localhost/',
+    });
+    const win = dom.window;
+    const wb = win._wb;
+
+    // Mock clipboard to capture the URL
+    let copiedURL = null;
+    win.navigator.clipboard = {
+      writeText: (text) => {
+        copiedURL = text;
+        return Promise.resolve();
+      },
+    };
+
+    wb.addBox(100, 100, 200, 100, 'Share Me');
+    wb.addBox(400, 100, 200, 100, 'Target');
+    wb.arrows.push({ from: wb.boxes[0].id, to: wb.boxes[1].id, fromSide: 'right-1', toSide: 'left-1' });
+    wb.shareURL();
+
+    // URL should start with the origin
+    expect(copiedURL).toMatch(/^http:\/\/localhost\/#state=/);
+
+    // Extract and decode the state
+    const encoded = copiedURL.split('#state=')[1];
+    const decoded = decodeState(encoded);
+    expect(decoded.boxes.length).toBe(2);
+    expect(decoded.boxes[0].text).toBe('Share Me');
+    expect(decoded.arrows.length).toBe(1);
+    expect(decoded.arrows[0].fromSide).toBe('right-1');
+  });
+
   test('invalid URL hash falls back to normal load', () => {
     const dom = new JSDOM(inlinedHTML, {
       runScripts: 'dangerously',
@@ -824,20 +887,6 @@ describe('URL state sharing', () => {
 });
 
 // ============== Pure function unit tests ==============
-const {
-  screenToCanvas,
-  zoomAt,
-  getAnchor,
-  oppositeSide,
-  buildArrowPath,
-  closestSide,
-  findBoxAt,
-  escapeXml,
-  generateSVG,
-  encodeState,
-  decodeState,
-} = require('../whiteboard');
-
 describe('pure functions', () => {
   test('screenToCanvas identity', () => {
     expect(screenToCanvas(150, 200, 0, 0, 1)).toEqual({ x: 150, y: 200 });
