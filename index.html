@@ -3141,7 +3141,11 @@
       function shareURL() {
         const state = { boxes, arrows, nextId, freeTexts };
         const encoded = encodeState(state);
-        const url = location.origin + location.pathname + '#state=' + encoded;
+        const base =
+          location.origin && location.origin !== 'null'
+            ? location.origin + location.pathname
+            : 'https://jfinite.com/whiteboard/';
+        const url = base + '#state=' + encoded;
         if (navigator.clipboard) {
           navigator.clipboard.writeText(url).then(function () {
             showToast('Share link copied to clipboard');
