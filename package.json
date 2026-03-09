@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "lint:html": "htmlhint index.html",
-    "lint:js": "eslint whiteboard.js",
+    "lint:js": "eslint whiteboard.js themes.js",
     "lint": "npm run lint:html && npm run lint:js",
     "format:check": "prettier --check \"*.{html,js}\" \"tests/**/*.js\"",
     "format": "prettier --write \"*.{html,js}\" \"tests/**/*.js\"",

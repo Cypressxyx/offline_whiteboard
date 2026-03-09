@@ -11,10 +11,11 @@ Offline-first whiteboard for system design. Single HTML file, no server, no exte
 
 - `index.html` — Main app: HTML, CSS, and stateful JS (toolbar, canvas, modals, event handlers)
 - `whiteboard.js` — Pure functions extracted for testability (geometry, SVG generation, state encoding)
-- `build.js` — Inlines `whiteboard.js` into `index.html`, minifies everything to `dist/index.html`
+- `themes.js` — All theme definitions (29 themes). Loaded via `<script src>` in browser, `require()` in tests
+- `build.js` — Inlines `whiteboard.js` and `themes.js` into `index.html`, minifies everything to `dist/index.html`
 - `tests/whiteboard.test.js` — Jest tests using jsdom to load the full app and snapshot DOM state
 
-`whiteboard.js` is loaded via `<script src>` in the browser and via `require()` in tests. The build step re-inlines it for production.
+`whiteboard.js` and `themes.js` are loaded via `<script src>` in the browser and via `require()` in tests. The build step re-inlines them for production.
 
 App state (boxes, arrows, freeTexts) is exposed via `window._wb` for testing.
 
@@ -54,3 +55,14 @@ Tests use jsdom to load the full inlined HTML and interact with the live DOM. Sn
 - Expose new functions via `window._wb` for test access
 - Use `var` in `whiteboard.js` for broader compatibility; `const`/`let` in `index.html`
 - No external runtime dependencies — everything runs offline from a single HTML file
+
+## Adding a New Theme
+
+1. Open `themes.js`
+2. Add a new entry to the `THEMES` object with a unique key and all required properties:
+   - `name` — Display name shown in the theme picker
+   - Colors: `bg`, `dot`, `toolbarBg`, `toolbarShadow`, `toolbarTitle`, `toolbarText`, `btnBorder`, `btnText`, `btnHoverBg`, `btnHoverBorder`, `boxBg`, `boxBorder`, `boxHoverBorder`, `boxHoverShadow`, `boxText`, `boxEditBg`, `accent`, `accentHover`, `accentGlow`, `arrow`, `drawPreviewBg`, `hintBg`, `hintText`, `modalOverlay`, `modalBg`, `modalText`, `modalSub`, `swatchBorder`, `swatchBg`, `swatchBox`, `swatchBoxBorder`
+3. Run `npm run test:update` to update the theme snapshots
+4. Run `npm run build` to verify everything passes
+5. Update the theme count in `README.md`
+6. Create a feature branch, commit, push, and open a PR

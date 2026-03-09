@@ -4,7 +4,10 @@ const { JSDOM } = require('jsdom');
 
 const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf8');
 const wbJS = fs.readFileSync(path.resolve(__dirname, '../whiteboard.js'), 'utf8');
-const inlinedHTML = html.replace('<script src="whiteboard.js"></script>', `<script>${wbJS}</script>`);
+const themesJS = fs.readFileSync(path.resolve(__dirname, '../themes.js'), 'utf8');
+const inlinedHTML = html
+  .replace('<script src="whiteboard.js"></script>', `<script>${wbJS}</script>`)
+  .replace('<script src="themes.js"></script>', `<script>${themesJS}</script>`);
 const {
   screenToCanvas,
   zoomAt,
@@ -18,6 +21,7 @@ const {
   encodeState,
   decodeState,
 } = require('../whiteboard');
+const { THEMES } = require('../themes');
 
 function loadApp() {
   const dom = new JSDOM(inlinedHTML, {
@@ -243,6 +247,60 @@ describe('themes', () => {
     Object.keys(wb.THEMES).forEach((key) => {
       expect(() => wb.applyTheme(key)).not.toThrow();
     });
+  });
+
+  test('every theme has all required CSS properties', () => {
+    const requiredKeys = [
+      'bg',
+      'dot',
+      'toolbarBg',
+      'toolbarShadow',
+      'toolbarTitle',
+      'toolbarText',
+      'btnBorder',
+      'btnText',
+      'btnHoverBg',
+      'btnHoverBorder',
+      'boxBg',
+      'boxBorder',
+      'boxHoverBorder',
+      'boxHoverShadow',
+      'boxText',
+      'boxEditBg',
+      'accent',
+      'accentHover',
+      'accentGlow',
+      'arrow',
+      'drawPreviewBg',
+      'hintBg',
+      'hintText',
+      'modalOverlay',
+      'modalBg',
+      'modalText',
+      'modalSub',
+      'swatchBorder',
+      'swatchBg',
+      'swatchBox',
+      'swatchBoxBorder',
+    ];
+    Object.entries(THEMES).forEach(([key, theme]) => {
+      requiredKeys.forEach((prop) => {
+        expect(theme[prop]).toBeTruthy();
+      });
+    });
+  });
+
+  test.each(Object.keys(THEMES))('theme "%s" applies CSS variables correctly', (key) => {
+    wb.applyTheme(key);
+    const style = doc.documentElement.style;
+    expect(style.getPropertyValue('--bg')).toBe(THEMES[key].bg);
+    expect(style.getPropertyValue('--accent')).toBe(THEMES[key].accent);
+    expect(style.getPropertyValue('--box-text')).toBe(THEMES[key].boxText);
+    expect(style.getPropertyValue('--arrow')).toBe(THEMES[key].arrow);
+  });
+
+  test('all themes data snapshot', () => {
+    expect(THEMES).toMatchSnapshot();
   });
 });
 

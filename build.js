@@ -9,9 +9,11 @@ async function build() {
   // Read source files
   let html = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
   const js = fs.readFileSync(path.resolve(__dirname, 'whiteboard.js'), 'utf8');
+  const themesJs = fs.readFileSync(path.resolve(__dirname, 'themes.js'), 'utf8');
 
-  // Inline whiteboard.js into the HTML
+  // Inline external scripts into the HTML
   html = html.replace('<script src="whiteboard.js"></script>', `<script>${js}</script>`);
+  html = html.replace('<script src="themes.js"></script>', `<script>${themesJs}</script>`);
 
   // Minify everything (HTML + inline CSS + inline JS)
   const result = await minify(html, {
