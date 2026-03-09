@@ -1,5 +1,26 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`URL state sharing round-trip: create state, encode to URL, reload, compare snapshots 1`] = `
+{
+  "originalCanvas": "
+        <svg id="arrows">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        <path d="M250,100 L325,100 L325,100 L400,100" class="arrow-line"></path><path d="M250,100 L325,100 L325,100 L400,100" class="arrow-clickable"></path><path d="M500,150 L500,225 L500,225 L500,300" class="arrow-line"></path><path d="M500,150 L500,225 L500,225 L500,300" class="arrow-clickable"></path></svg>
+      <div class="box" data-id="ID" style="left: 50px; top: 50px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">API Gateway</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box" data-id="ID" style="left: 400px; top: 50px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Auth Service</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="box" data-id="ID" style="left: 400px; top: 300px; width: 200px; height: 100px;"><svg class="marching-svg" preserveAspectRatio="none"><rect x="2" y="2" rx="14" ry="14"></rect></svg><div class="box-text">Database</div><div class="edge-handle top-0"></div><div class="edge-handle top-1"></div><div class="edge-handle top-2"></div><div class="edge-handle right-0"></div><div class="edge-handle right-1"></div><div class="edge-handle right-2"></div><div class="edge-handle bottom-0"></div><div class="edge-handle bottom-1"></div><div class="edge-handle bottom-2"></div><div class="edge-handle left-0"></div><div class="edge-handle left-1"></div><div class="edge-handle left-2"></div></div><div class="free-text" data-ft-id="ft-ID" style="left: 200px; top: 200px;"></div>",
+  "originalSvg": "
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"></polygon>
+            </marker>
+          </defs>
+        <path d="M250,100 L325,100 L325,100 L400,100" class="arrow-line"></path><path d="M250,100 L325,100 L325,100 L400,100" class="arrow-clickable"></path><path d="M500,150 L500,225 L500,225 L500,300" class="arrow-line"></path><path d="M500,150 L500,225 L500,225 L500,300" class="arrow-clickable"></path>",
+}
+`;
+
 exports[`arrow operations arrow between two boxes renders SVG paths 1`] = `
 "
           <defs>

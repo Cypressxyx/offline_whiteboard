@@ -772,6 +772,46 @@ describe('URL state sharing', () => {
     expect(wb.arrows.length).toBe(1);
   });
 
+  test('round-trip: create state, encode to URL, reload, compare snapshots', () => {
+    // Build state in first instance
+    const { wb: wb1, doc: doc1 } = loadApp();
+    const b1 = wb1.addBox(50, 50, 200, 100, 'API Gateway');
+    const b2 = wb1.addBox(400, 50, 200, 100, 'Auth Service');
+    const b3 = wb1.addBox(400, 300, 200, 100, 'Database');
+    wb1.arrows.push(
+      { from: b1.id, to: b2.id, fromSide: 'right-1', toSide: 'left-1' },
+      { from: b2.id, to: b3.id, fromSide: 'bottom-1', toSide: 'top-1' },
+    );
+    wb1.renderArrows();
+    wb1.addFreeText(200, 200, 'System Design');
+    wb1.selectBox(null);
+
+    const originalCanvas = canvasSnapshot(doc1);
+    const originalSvg = svgSnapshot(doc1);
+
+    // Encode state and load in a fresh instance via URL
+    const state = {
+      boxes: wb1.boxes,
+      arrows: wb1.arrows,
+      nextId: wb1.nextId,
+      freeTexts: wb1.freeTexts.map((ft) => ({ x: ft.x, y: ft.y, text: ft.text, id: ft.id })),
+    };
+    const encoded = encodeState(state);
+    const dom2 = new JSDOM(inlinedHTML, {
+      runScripts: 'dangerously',
+      pretendToBeVisual: true,
+      url: 'http://localhost/#state=' + encoded,
+    });
+    const doc2 = dom2.window.document;
+
+    const restoredCanvas = canvasSnapshot(doc2);
+    const restoredSvg = svgSnapshot(doc2);
+
+    expect(restoredCanvas).toBe(originalCanvas);
+    expect(restoredSvg).toBe(originalSvg);
+    expect({ originalCanvas, originalSvg }).toMatchSnapshot();
+  });
+
   test('invalid URL hash falls back to normal load', () => {
     const dom = new JSDOM(inlinedHTML, {
       runScripts: 'dangerously',
