@@ -1,0 +1,120 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`arrow path between boxes all slot combos snapshot 1`] = `
+{
+  "right-0 -> left-0": "M300,125 L350,125 L350,325 L400,325",
+  "right-0 -> left-1": "M300,125 L350,125 L350,350 L400,350",
+  "right-0 -> left-2": "M300,125 L350,125 L350,375 L400,375",
+  "right-1 -> left-0": "M300,150 L350,150 L350,325 L400,325",
+  "right-1 -> left-1": "M300,150 L350,150 L350,350 L400,350",
+  "right-1 -> left-2": "M300,150 L350,150 L350,375 L400,375",
+  "right-2 -> left-0": "M300,175 L350,175 L350,325 L400,325",
+  "right-2 -> left-1": "M300,175 L350,175 L350,350 L400,350",
+  "right-2 -> left-2": "M300,175 L350,175 L350,375 L400,375",
+}
+`;
+
+exports[`arrow path between boxes bottom-to-top connection 1`] = `"M200,200 L200,250 L500,250 L500,300"`;
+
+exports[`arrow path between boxes right-to-left connection 1`] = `"M300,150 L350,150 L350,350 L400,350"`;
+
+exports[`buildArrowPath snapshot: various direction combos 1`] = `
+{
+  "bottom->bottom": "M200,200 L200,300 L500,300 L500,400",
+  "bottom->left": "M200,200 L200,300 L500,300 L500,400",
+  "bottom->right": "M200,200 L200,300 L500,300 L500,400",
+  "bottom->top": "M200,200 L200,300 L500,300 L500,400",
+  "left->bottom": "M200,200 L350,200 L350,400 L500,400",
+  "left->left": "M200,200 L350,200 L350,400 L500,400",
+  "left->right": "M200,200 L350,200 L350,400 L500,400",
+  "left->top": "M200,200 L350,200 L350,400 L500,400",
+  "right->bottom": "M200,200 L350,200 L350,400 L500,400",
+  "right->left": "M200,200 L350,200 L350,400 L500,400",
+  "right->right": "M200,200 L350,200 L350,400 L500,400",
+  "right->top": "M200,200 L350,200 L350,400 L500,400",
+  "top->bottom": "M200,200 L200,300 L500,300 L500,400",
+  "top->left": "M200,200 L200,300 L500,300 L500,400",
+  "top->right": "M200,200 L200,300 L500,300 L500,400",
+  "top->top": "M200,200 L200,300 L500,300 L500,400",
+}
+`;
+
+exports[`closestSide snapshot: grid of test points 1`] = `
+{
+  "(100,125)": "left-0",
+  "(100,150)": "left-1",
+  "(100,175)": "left-2",
+  "(150,100)": "top-0",
+  "(150,200)": "bottom-0",
+  "(200,100)": "top-1",
+  "(200,200)": "bottom-1",
+  "(250,100)": "top-2",
+  "(250,200)": "bottom-2",
+  "(300,125)": "right-0",
+  "(300,150)": "right-1",
+  "(300,175)": "right-2",
+}
+`;
+
+exports[`edge cases buildArrowPath with same start and end 1`] = `"M200,200 L200,200 L200,200 L200,200"`;
+
+exports[`getAnchor snapshot: all anchors 1`] = `
+{
+  "bottom-0": {
+    "x": 150,
+    "y": 200,
+  },
+  "bottom-1": {
+    "x": 200,
+    "y": 200,
+  },
+  "bottom-2": {
+    "x": 250,
+    "y": 200,
+  },
+  "left-0": {
+    "x": 100,
+    "y": 125,
+  },
+  "left-1": {
+    "x": 100,
+    "y": 150,
+  },
+  "left-2": {
+    "x": 100,
+    "y": 175,
+  },
+  "right-0": {
+    "x": 300,
+    "y": 125,
+  },
+  "right-1": {
+    "x": 300,
+    "y": 150,
+  },
+  "right-2": {
+    "x": 300,
+    "y": 175,
+  },
+  "top-0": {
+    "x": 150,
+    "y": 100,
+  },
+  "top-1": {
+    "x": 200,
+    "y": 100,
+  },
+  "top-2": {
+    "x": 250,
+    "y": 100,
+  },
+}
+`;
+
+exports[`zoomAt snapshot: zoom state 1`] = `
+{
+  "panX": -100,
+  "panY": -75,
+  "scale": 1.25,
+}
+`;
