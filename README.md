@@ -25,4 +25,4 @@ npm install
 npm run validate
 ```
 
-This runs formatting check, linting (HTML + JS), and 73 tests.
+This runs formatting check, linting (HTML + JS), 73 tests, and builds a minified single-file bundle to `dist/`.
