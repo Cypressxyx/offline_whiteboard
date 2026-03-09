@@ -105,6 +105,24 @@
         #toolbar .sep {
           display: none;
         }
+        .hint {
+          display: none;
+        }
+        #bmc-link {
+          bottom: 8px;
+          left: 8px;
+          padding: 5px 8px;
+          font-size: 0;
+          gap: 0;
+        }
+        #bmc-link svg {
+          width: 20px;
+          height: 20px;
+        }
+        #zoom-controls {
+          bottom: 8px;
+          right: 8px;
+        }
       }
 
       #toolbar .title {
@@ -481,8 +499,16 @@
         z-index: 1000;
         transition:
           background 0.3s,
-          color 0.3s;
+          color 0.3s,
+          opacity 0.5s;
         white-space: nowrap;
+        opacity: 1;
+        cursor: pointer;
+      }
+
+      .hint.hidden {
+        opacity: 0;
+        pointer-events: none;
       }
 
       /* Buy me a coffee */
@@ -1028,7 +1054,7 @@
       <button onclick="zoomBy(0.15)" title="Zoom in">+</button>
     </div>
 
-    <div class="hint">
+    <div class="hint" onclick="this.classList.add('hidden')">
       Scroll to pan &middot; Pinch or Ctrl+Scroll to zoom &middot; Click to place box &middot; Double-click to edit
       &middot; Hover edges for arrows
     </div>
@@ -2247,6 +2273,12 @@
         load();
       }
       updateTransform();
+
+      // Auto-dismiss hint after 5 seconds
+      setTimeout(function () {
+        const hint = document.querySelector('.hint');
+        if (hint) hint.classList.add('hidden');
+      }, 5000);
 
       // Expose internals for testing
       window._wb = {
