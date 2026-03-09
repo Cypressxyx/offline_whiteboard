@@ -27,7 +27,9 @@ Always follow this order:
 3. Add snapshot tests in `tests/whiteboard.test.js` for any new functionality
 4. Run `npm run build` to verify formatting, linting, tests, and minified build all pass
 5. If snapshots need updating after intentional changes: `npm run test:update` then re-run `npm run build`
-6. Commit and push, then open a PR to `main` on GitHub
+6. Create a feature branch, commit, push the branch, and open a PR to `main` on GitHub
+
+**Never push directly to `main`.** All changes go through pull requests.
 
 ## Commands
 
