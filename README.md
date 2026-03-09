@@ -4,6 +4,8 @@ A minimal, offline-first whiteboard for system design. Single HTML file, no depe
 
 **Live:** [jfinite.com/whiteboard](https://jfinite.com/whiteboard)
 
+![Whiteboard Screenshot](https://pbs.twimg.com/media/HDAQwPla4AALv6L?format=jpg&name=4096x4096)
+
 ## Features
 
 - **Boxes** — Click and drag to create. Double-click (or double-tap on mobile) to edit text.
